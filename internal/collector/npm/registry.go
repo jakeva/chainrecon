@@ -19,7 +19,7 @@ import (
 const (
 	registryBaseURL  = "https://registry.npmjs.org"
 	downloadsBaseURL = "https://api.npmjs.org/downloads/point/last-week"
-	userAgent        = "chainrecon/0.1.0"
+	userAgentDefault = "chainrecon"
 
 	metadataBucket  = "npm_metadata"
 	downloadsBucket = "npm_downloads"
@@ -28,6 +28,13 @@ const (
 	initialBackoff   = 1 * time.Second
 	backoffMultiplier = 2
 )
+
+var userAgent = userAgentDefault
+
+// SetUserAgent overrides the default User-Agent header sent with all requests.
+func SetUserAgent(ua string) {
+	userAgent = ua
+}
 
 // RegistryClient defines the interface for interacting with the npm registry API.
 type RegistryClient interface {
