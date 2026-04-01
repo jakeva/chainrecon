@@ -126,7 +126,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, ", scorecard")
 	}
 	if hasGitHubRepo && !noGitHub {
-		fmt.Fprintf(os.Stderr, ", releases")
+		fmt.Fprintf(os.Stderr, ", releases, tags")
 	}
 	fmt.Fprintf(os.Stderr, " ...\n")
 
@@ -136,6 +136,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 		dependentCount  int
 		scorecardResult *model.ScorecardResult
 		githubReleases  []model.GitHubRelease
+		githubTags      []model.GitHubTag
 	)
 
 	g, gctx := errgroup.WithContext(ctx)
@@ -185,8 +186,16 @@ func runScan(cmd *cobra.Command, args []string) error {
 			var err error
 			githubReleases, err = githubClient.FetchReleases(gctx, repoOwner, repoName)
 			if err != nil {
-				// GitHub failures are non-fatal.
 				fmt.Fprintf(os.Stderr, "Warning: GitHub release fetch failed: %v\n", err)
+				return nil
+			}
+			return nil
+		})
+		g.Go(func() error {
+			var err error
+			githubTags, err = githubClient.FetchTags(gctx, repoOwner, repoName)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: GitHub tag fetch failed: %v\n", err)
 				return nil
 			}
 			return nil
@@ -219,11 +228,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 	scorecardAnalyzer := analyzer.NewScorecardAnalyzer()
 	scorecardScore, scorecardFindings := scorecardAnalyzer.Analyze(scorecardResult)
 
-	// Tag correlation analysis.
+	// Tag correlation analysis: merge releases and tags into a single set.
 	var tagFindings []model.Finding
-	if githubReleases != nil {
+	if githubReleases != nil || githubTags != nil {
+		merged := mergeReleasesAndTags(githubReleases, githubTags)
 		tagAnalyzer := analyzer.NewTagCorrelationAnalyzer()
-		tagFindings = tagAnalyzer.Analyze(sortedVersions, githubReleases)
+		tagFindings = tagAnalyzer.Analyze(sortedVersions, merged)
 	}
 
 	// --- Composite scoring ---
@@ -317,4 +327,27 @@ func parsePackageArg(arg string) (name, version string) {
 		return arg, ""
 	}
 	return arg[:idx], arg[idx+1:]
+}
+
+// mergeReleasesAndTags combines GitHub releases and git tags into a single
+// deduplicated slice of GitHubRelease. Many projects create git tags without
+// formal GitHub releases, so checking only releases would produce false
+// positives in tag correlation.
+func mergeReleasesAndTags(releases []model.GitHubRelease, tags []model.GitHubTag) []model.GitHubRelease {
+	seen := make(map[string]bool, len(releases)+len(tags))
+	merged := make([]model.GitHubRelease, 0, len(releases)+len(tags))
+
+	for _, r := range releases {
+		if !seen[r.TagName] {
+			seen[r.TagName] = true
+			merged = append(merged, r)
+		}
+	}
+	for _, t := range tags {
+		if !seen[t.Name] {
+			seen[t.Name] = true
+			merged = append(merged, model.GitHubRelease{TagName: t.Name})
+		}
+	}
+	return merged
 }
