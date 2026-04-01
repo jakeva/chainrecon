@@ -42,6 +42,12 @@ const (
 	scoreCeiling     = 10.0
 )
 
+// Pre-computed log10 values for the download score interpolation.
+var (
+	logFloor   = math.Log10(float64(downloadsFloor))
+	logCeiling = math.Log10(float64(downloadsCeiling))
+)
+
 // Analyze computes the blast-radius score using a logarithmic scale over
 // weekly downloads, applies an ecosystem category multiplier based on the
 // package name, and adds a bonus for high dependent counts. The final score
@@ -73,7 +79,7 @@ func (b *blastRadiusAnalyzer) Analyze(weeklyDownloads int, dependentCount int, p
 		Detail: detail,
 	}
 
-	findings := buildBlastRadiusFindings(score, weeklyDownloads, dependentCount)
+	findings := buildBlastRadiusFindings(score, detail)
 
 	return signalScore, findings
 }
@@ -96,8 +102,6 @@ func downloadScore(downloads int) float64 {
 	// Linear interpolation on the log10 scale:
 	// log10(1000)=3 -> 1.0, log10(50_000_000)~7.699 -> 10.0
 	logVal := math.Log10(float64(downloads))
-	logFloor := math.Log10(float64(downloadsFloor))
-	logCeiling := math.Log10(float64(downloadsCeiling))
 
 	return scoreFloor + (scoreCeiling-scoreFloor)*(logVal-logFloor)/(logCeiling-logFloor)
 }
@@ -157,10 +161,7 @@ func dependentBonus(dependents int) float64 {
 
 // buildBlastRadiusFindings produces findings based on the computed blast
 // radius score, including download and dependent counts in the detail.
-func buildBlastRadiusFindings(score float64, downloads int, dependents int) []model.Finding {
-	detail := fmt.Sprintf("%s weekly downloads, %s direct dependents",
-		format.Commas(downloads), format.Commas(dependents))
-
+func buildBlastRadiusFindings(score float64, detail string) []model.Finding {
 	var findings []model.Finding
 
 	switch {

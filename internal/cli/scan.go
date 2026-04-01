@@ -252,15 +252,18 @@ func runScan(cmd *cobra.Command, args []string) error {
 	scores := s.ComputeScores(signalInputs)
 
 	// --- Build provenance history ---
-	provenanceHistory := make([]model.ProvenanceVersion, 0, len(attestations))
-	for _, a := range attestations {
-		state := provenanceAnalyzer.ClassifyState([]model.VersionAttestation{a})
-		provenanceHistory = append(provenanceHistory, model.ProvenanceVersion{
+	provenanceHistory := make([]model.ProvenanceVersion, len(attestations))
+	for i, a := range attestations {
+		state := model.ProvenanceNever
+		if a.HasAnyProvenance {
+			state = model.ProvenanceActive
+		}
+		provenanceHistory[i] = model.ProvenanceVersion{
 			Version:    a.Version,
 			State:      state,
 			HasSLSA:    a.HasSLSA,
 			HasPublish: a.HasPublish,
-		})
+		}
 	}
 
 	// --- Aggregate findings ---

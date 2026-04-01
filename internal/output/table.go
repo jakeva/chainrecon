@@ -107,7 +107,7 @@ func (t *TableFormatter) renderSignalTable(report *model.Report) string {
 
 // buildSignalRows returns the individual signal rows from the report scores.
 func (t *TableFormatter) buildSignalRows(report *model.Report) []signalRow {
-	detailBySignal := make(map[string]string)
+	detailBySignal := make(map[string]string, 6)
 	for _, f := range report.Findings {
 		if _, ok := detailBySignal[f.Signal]; !ok {
 			detailBySignal[f.Signal] = f.Message
