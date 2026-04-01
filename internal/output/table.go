@@ -60,9 +60,9 @@ func (t *TableFormatter) Format(report *model.Report) (string, error) {
 // renderHeader produces the package name, version, and weekly download lines.
 func (t *TableFormatter) renderHeader(report *model.Report) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(" %s %s\n", t.bold.Render("Package:"), report.Package))
-	b.WriteString(fmt.Sprintf(" %s %s\n", t.bold.Render("Version:"), report.Version))
-	b.WriteString(fmt.Sprintf(" %s %s\n", t.bold.Render("Weekly Downloads:"), formatDownloads(report.WeeklyDownloads)))
+	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Package:"), report.Package)
+	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Version:"), report.Version)
+	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Weekly Downloads:"), formatDownloads(report.WeeklyDownloads))
 	return b.String()
 }
 
@@ -183,10 +183,6 @@ func (t *TableFormatter) bottomRule() string {
 	)
 }
 
-// headerRule returns the header separator between the column titles and data.
-func (t *TableFormatter) headerRule() string {
-	return t.midRule()
-}
 
 // renderFindings produces the "Key Findings" section with colored severity tags.
 func (t *TableFormatter) renderFindings(findings []model.Finding) string {

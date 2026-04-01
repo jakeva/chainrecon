@@ -3,7 +3,6 @@ package analyzer
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"time"
@@ -290,23 +289,3 @@ func (a *identityAnalyzer) detectMultiplePublishers(metadata *model.PackageMetad
 	return len(publishers) > 1
 }
 
-// minDuration returns the smaller of two durations.
-func minDuration(a, b time.Duration) time.Duration {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// absDuration returns the absolute value of a duration.
-func absDuration(d time.Duration) time.Duration {
-	if d < 0 {
-		return -d
-	}
-	return d
-}
-
-// clampScore ensures a score stays within [0.0, max].
-func clampScore(score, max float64) float64 {
-	return math.Min(math.Max(score, 0.0), max)
-}

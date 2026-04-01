@@ -194,7 +194,7 @@ func (r *registryClient) doRequestWithRetry(ctx context.Context, url string) ([]
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests && attempt < maxRetries {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			wait := backoff
 			if ra := resp.Header.Get("Retry-After"); ra != "" {
@@ -214,7 +214,7 @@ func (r *registryClient) doRequestWithRetry(ctx context.Context, url string) ([]
 		}
 
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, fmt.Errorf("read response body: %w", err)
 		}

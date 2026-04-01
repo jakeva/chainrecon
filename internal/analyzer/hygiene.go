@@ -66,7 +66,7 @@ func (h *hygieneAnalyzer) Analyze(metadata *model.PackageMetadata, attestations 
 	} else if latestVersion != "" {
 		// --- Check 2: Latest version lost provenance ---
 		if la, ok := attestByVersion[latestVersion]; ok {
-			if !(la.HasSLSA && la.HasPublish) && withProvenance > 0 {
+			if (!la.HasSLSA || !la.HasPublish) && withProvenance > 0 {
 				score += 3.0
 				details = append(details, "latest version lacks provenance but older versions have it")
 			}

@@ -115,15 +115,10 @@ func (p *provenanceAnalyzer) ClassifyState(attestations []model.VersionAttestati
 		// INTERMITTENT because provenance appeared and disappeared.
 		olderAllMissing := true
 		olderAnyHave := false
-		olderAnyMissing := false
 		for i := recentEnd; i < len(attestations); i++ {
 			if attestations[i].HasAnyProvenance {
 				olderAllMissing = false
 				olderAnyHave = true
-			} else {
-				olderAnyMissing = false
-				_ = olderAnyMissing // avoid unused warning
-				olderAnyMissing = true
 			}
 		}
 

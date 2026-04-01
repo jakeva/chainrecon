@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -126,7 +125,7 @@ func (c *attestationClient) doRequestWithRetry(ctx context.Context, reqURL strin
 				return nil, ctx.Err()
 			case <-time.After(backoff):
 			}
-			backoff = time.Duration(float64(backoff) * math.Pow(2, 1))
+			backoff *= 2
 		}
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
@@ -141,18 +140,18 @@ func (c *attestationClient) doRequestWithRetry(ctx context.Context, reqURL strin
 		}
 
 		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 
 		if readErr != nil {
 			return nil, fmt.Errorf("read response body: %w", readErr)
 		}
 
-		switch {
-		case resp.StatusCode == http.StatusOK:
+		switch resp.StatusCode {
+		case http.StatusOK:
 			return body, nil
-		case resp.StatusCode == http.StatusNotFound:
+		case http.StatusNotFound:
 			return nil, nil
-		case resp.StatusCode == http.StatusTooManyRequests:
+		case http.StatusTooManyRequests:
 			lastErr = fmt.Errorf("rate limited (HTTP 429), attempt %d/%d", attempt+1, maxRetries+1)
 			continue
 		default:

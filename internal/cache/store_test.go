@@ -14,7 +14,7 @@ func newTestStore(t *testing.T) *BoltStore {
 	if err != nil {
 		t.Fatalf("NewBoltStoreAt: %v", err)
 	}
-	t.Cleanup(func() { store.Close() })
+	t.Cleanup(func() { _ = store.Close() })
 	return store
 }
 

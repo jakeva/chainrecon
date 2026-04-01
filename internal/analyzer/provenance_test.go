@@ -113,8 +113,6 @@ func TestClassifyState(t *testing.T) {
 
 func TestAnalyze_Scoring(t *testing.T) {
 	pa := NewProvenanceAnalyzer()
-	const tolerance = 0.1
-
 	tests := []struct {
 		name         string
 		attestations []model.VersionAttestation

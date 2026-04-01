@@ -55,7 +55,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 		}
 		store = bs
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// --- Clients ---
 	registry := npm.NewRegistryClient(store)
@@ -179,8 +179,8 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("format output: %w", err)
 	}
 
-	fmt.Fprint(os.Stdout, result)
-	fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprint(os.Stdout, result)
+	_, _ = fmt.Fprintln(os.Stdout)
 
 	return nil
 }
