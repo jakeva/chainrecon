@@ -15,10 +15,9 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-const (
-	attestationBaseURL    = "https://registry.npmjs.org/-/npm/v1/attestations"
-	attestationCacheBucket = "npm_attestations"
-)
+var attestationBaseURL = "https://registry.npmjs.org/-/npm/v1/attestations"
+
+const attestationCacheBucket = "npm_attestations"
 
 // AttestationClient defines the interface for fetching npm attestation data.
 type AttestationClient interface {
