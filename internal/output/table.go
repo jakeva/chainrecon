@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/chainrecon/chainrecon/internal/format"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -62,7 +63,7 @@ func (t *TableFormatter) renderHeader(report *model.Report) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Package:"), report.Package)
 	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Version:"), report.Version)
-	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Weekly Downloads:"), formatDownloads(report.WeeklyDownloads))
+	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Weekly Downloads:"), format.Commas(report.WeeklyDownloads))
 	return b.String()
 }
 
@@ -233,29 +234,6 @@ func targetLabel(score float64) string {
 	}
 }
 
-// formatDownloads formats an integer with comma-separated thousands
-// (e.g., 103241892 becomes "103,241,892").
-func formatDownloads(n int) string {
-	if n < 0 {
-		return "-" + formatDownloads(-n)
-	}
-	s := fmt.Sprintf("%d", n)
-	if len(s) <= 3 {
-		return s
-	}
-	var result strings.Builder
-	remainder := len(s) % 3
-	if remainder > 0 {
-		result.WriteString(s[:remainder])
-	}
-	for i := remainder; i < len(s); i += 3 {
-		if result.Len() > 0 {
-			result.WriteByte(',')
-		}
-		result.WriteString(s[i : i+3])
-	}
-	return result.String()
-}
 
 // wrapText splits text into lines that fit within the given width, breaking
 // on word boundaries. Lines are never wider than width characters.

@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/chainrecon/chainrecon/internal/format"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -64,7 +65,7 @@ func (b *blastRadiusAnalyzer) Analyze(weeklyDownloads int, dependentCount int, p
 	}
 
 	detail := fmt.Sprintf("%s weekly downloads, %s direct dependents",
-		formatWithCommas(weeklyDownloads), formatWithCommas(dependentCount))
+		format.Commas(weeklyDownloads), format.Commas(dependentCount))
 
 	signalScore := model.SignalScore{
 		Name:   "blast_radius",
@@ -158,7 +159,7 @@ func dependentBonus(dependents int) float64 {
 // radius score, including download and dependent counts in the detail.
 func buildBlastRadiusFindings(score float64, downloads int, dependents int) []model.Finding {
 	detail := fmt.Sprintf("%s weekly downloads, %s direct dependents",
-		formatWithCommas(downloads), formatWithCommas(dependents))
+		format.Commas(downloads), format.Commas(dependents))
 
 	var findings []model.Finding
 
@@ -196,30 +197,3 @@ func buildBlastRadiusFindings(score float64, downloads int, dependents int) []mo
 	return findings
 }
 
-// formatWithCommas formats an integer with comma-separated thousands
-// (e.g., 103241892 becomes "103,241,892").
-func formatWithCommas(n int) string {
-	if n < 0 {
-		return "-" + formatWithCommas(-n)
-	}
-
-	s := fmt.Sprintf("%d", n)
-	if len(s) <= 3 {
-		return s
-	}
-
-	// Work backwards inserting commas every 3 digits.
-	var b strings.Builder
-	remainder := len(s) % 3
-	if remainder > 0 {
-		b.WriteString(s[:remainder])
-	}
-	for i := remainder; i < len(s); i += 3 {
-		if b.Len() > 0 {
-			b.WriteByte(',')
-		}
-		b.WriteString(s[i : i+3])
-	}
-
-	return b.String()
-}
