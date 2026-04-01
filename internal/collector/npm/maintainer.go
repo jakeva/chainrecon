@@ -7,19 +7,6 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-// personalDomains is the set of email domains considered personal providers.
-var personalDomains = map[string]bool{
-	"gmail.com":      true,
-	"protonmail.com": true,
-	"proton.me":      true,
-	"outlook.com":    true,
-	"hotmail.com":    true,
-	"yahoo.com":      true,
-	"live.com":       true,
-	"icloud.com":     true,
-	"me.com":         true,
-}
-
 // MaintainerClient provides analysis of npm package maintainer metadata.
 type MaintainerClient interface {
 	// ExtractMaintainers returns the maintainers listed in the package metadata.
@@ -80,12 +67,7 @@ func (c *maintainerClient) ExtractPublishers(metadata *model.PackageMetadata) []
 // IsPersonalEmail reports whether the given email address belongs to a personal
 // provider such as Gmail, ProtonMail, Outlook, Yahoo, iCloud, or similar.
 func (c *maintainerClient) IsPersonalEmail(email string) bool {
-	parts := strings.SplitN(email, "@", 2)
-	if len(parts) != 2 {
-		return false
-	}
-	domain := strings.ToLower(parts[1])
-	return personalDomains[domain]
+	return model.IsPersonalEmail(email)
 }
 
 // IsScopedPackage reports whether the package name starts with @, indicating

@@ -8,19 +8,6 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-// personalEmailDomains lists domains considered personal (higher phishing risk).
-var personalEmailDomains = map[string]bool{
-	"gmail.com":      true,
-	"protonmail.com": true,
-	"proton.me":      true,
-	"outlook.com":    true,
-	"hotmail.com":    true,
-	"yahoo.com":      true,
-	"live.com":       true,
-	"icloud.com":     true,
-	"me.com":         true,
-}
-
 // MaintainerAnalyzer evaluates the risk posed by the concentration and
 // characteristics of a package's npm maintainers.
 type MaintainerAnalyzer interface {
@@ -219,10 +206,5 @@ func computeEmailScore(maintainers []model.Maintainer) (float64, bool) {
 // isPersonalEmail reports whether the given email address belongs to a
 // known personal email provider (e.g. gmail.com, protonmail.com).
 func isPersonalEmail(email string) bool {
-	parts := strings.SplitN(email, "@", 2)
-	if len(parts) != 2 {
-		return false
-	}
-	domain := strings.ToLower(parts[1])
-	return personalEmailDomains[domain]
+	return model.IsPersonalEmail(email)
 }
