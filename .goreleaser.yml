@@ -1,0 +1,50 @@
+version: 2
+
+builds:
+  - main: ./cmd/chainrecon
+    binary: chainrecon
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/chainrecon/chainrecon/internal/cli.Version={{.Version}}
+      - -X github.com/chainrecon/chainrecon/internal/cli.Commit={{.Commit}}
+      - -X github.com/chainrecon/chainrecon/internal/cli.Date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+brews:
+  - repository:
+      owner: chainrecon
+      name: homebrew-tap
+    homepage: https://github.com/chainrecon/chainrecon
+    description: Find the next supply chain attack before the attacker does.
+    license: Apache-2.0
+    install: |
+      bin.install "chainrecon"
+    test: |
+      system "#{bin}/chainrecon", "version"
