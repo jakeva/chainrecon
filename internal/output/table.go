@@ -147,11 +147,11 @@ func (t *TableFormatter) renderRow(row signalRow) string {
 			sig = row.signal
 			sc = row.score
 		}
-		b.WriteString(fmt.Sprintf(" │ %s │ %s │ %s │\n",
+		fmt.Fprintf(&b, " │ %s │ %s │ %s │\n",
 			padRight(sig, colSignal),
 			padRight(sc, colScore),
 			padRight(dl, colDetail),
-		))
+		)
 	}
 	return b.String()
 }
@@ -191,10 +191,10 @@ func (t *TableFormatter) renderFindings(findings []model.Finding) string {
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(" %s\n", t.bold.Render("Key Findings:")))
+	fmt.Fprintf(&b, " %s\n", t.bold.Render("Key Findings:"))
 	for _, f := range findings {
 		tag := t.colorSeverity(f.Severity)
-		b.WriteString(fmt.Sprintf("  %s %s\n", tag, f.Message))
+		fmt.Fprintf(&b, "  %s %s\n", tag, f.Message)
 	}
 	return b.String()
 }
