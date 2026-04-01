@@ -77,6 +77,34 @@ func TestBoltStore_GetExpiredKey(t *testing.T) {
 	}
 }
 
+func TestBoltStore_GetEvictsExpiredEntry(t *testing.T) {
+	store := newTestStore(t)
+	ctx := context.Background()
+
+	bucket := "metadata"
+	key := "express"
+	value := []byte(`{"name":"express"}`)
+
+	if err := store.Set(ctx, bucket, key, value, 1*time.Nanosecond); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	time.Sleep(5 * time.Millisecond)
+
+	// First Get should evict the expired entry.
+	_, _ = store.Get(ctx, bucket, key)
+
+	// Freeze time far in the past so if the entry still exists it would look valid.
+	store.now = func() time.Time { return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC) }
+
+	got, err := store.Get(ctx, bucket, key)
+	if err != nil {
+		t.Fatalf("Get after eviction: %v", err)
+	}
+	if got != nil {
+		t.Errorf("expired entry was not evicted from the database")
+	}
+}
+
 func TestBoltStore_Clear(t *testing.T) {
 	store := newTestStore(t)
 	ctx := context.Background()

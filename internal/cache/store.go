@@ -67,23 +67,27 @@ func NewBoltStoreAt(path string) (*BoltStore, error) {
 }
 
 // Get retrieves a cached value. Returns nil data if not found or expired.
+// Expired and corrupt entries are deleted on access so they don't accumulate.
 func (s *BoltStore) Get(_ context.Context, bucket, key string) ([]byte, error) {
 	var result []byte
-	err := s.db.View(func(tx *bolt.Tx) error {
+	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
 			return nil
 		}
-		raw := b.Get([]byte(key))
+		bkey := []byte(key)
+		raw := b.Get(bkey)
 		if raw == nil {
 			return nil
 		}
 		var e entry
 		if err := json.Unmarshal(raw, &e); err != nil {
-			return nil // treat corrupt entries as cache miss
+			_ = b.Delete(bkey)
+			return nil
 		}
 		if s.now().After(e.ExpiresAt) {
-			return nil // expired
+			_ = b.Delete(bkey)
+			return nil
 		}
 		result = e.Data
 		return nil
