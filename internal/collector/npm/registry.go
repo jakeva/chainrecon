@@ -16,16 +16,19 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-const (
+var (
 	registryBaseURL  = "https://registry.npmjs.org"
 	downloadsBaseURL = "https://api.npmjs.org/downloads/point/last-week"
+)
+
+const (
 	userAgentDefault = "chainrecon"
 
 	metadataBucket  = "npm_metadata"
 	downloadsBucket = "npm_downloads"
 
-	maxRetries       = 3
-	initialBackoff   = 1 * time.Second
+	maxRetries        = 3
+	initialBackoff    = 1 * time.Second
 	backoffMultiplier = 2
 )
 
