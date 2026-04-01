@@ -114,13 +114,15 @@ func (t *TableFormatter) buildSignalRows(report *model.Report) []signalRow {
 		}
 	}
 
-	return []signalRow{
+	rows := []signalRow{
 		{signal: "Provenance", score: fmt.Sprintf("%.1f/10", report.Scores.Provenance), detail: detailBySignal["provenance"]},
 		{signal: "Publishing Hygiene", score: fmt.Sprintf("%.1f/10", report.Scores.PublishingHygiene), detail: detailBySignal["publishing_hygiene"]},
 		{signal: "Maintainer Risk", score: fmt.Sprintf("%.1f/10", report.Scores.MaintainerRisk), detail: detailBySignal["maintainer_risk"]},
 		{signal: "Identity Stability", score: fmt.Sprintf("%.1f/10", report.Scores.IdentityStability), detail: detailBySignal["identity"]},
+		{signal: "Scorecard (imported)", score: fmt.Sprintf("%.1f/10", report.Scores.ScorecardRepo), detail: detailBySignal["scorecard"]},
 		{signal: "Blast Radius", score: fmt.Sprintf("%.1f/10", report.Scores.BlastRadius), detail: detailBySignal["blast_radius"]},
 	}
+	return rows
 }
 
 // buildSummaryRows returns the aggregate rows (attack surface and target score).

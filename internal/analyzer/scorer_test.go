@@ -155,10 +155,16 @@ func TestScorer_ClassifyRisk(t *testing.T) {
 }
 
 func TestScorer_WeightsSumToOne(t *testing.T) {
-	// Verify that the Phase 1 weights sum to 1.0 (since Scorecard is excluded).
-	total := weightProvenance + weightPublishHygiene + weightMaintainerRisk + weightIdentityStability
-	if math.Abs(total-1.0) > 0.001 {
-		t.Errorf("Phase 1 weights sum to %.4f, want 1.0", total)
+	// Verify that the Phase 1 weights sum to 1.0.
+	p1Total := p1WeightProvenance + p1WeightPublishHygiene + p1WeightMaintainerRisk + p1WeightIdentityStability
+	if math.Abs(p1Total-1.0) > 0.001 {
+		t.Errorf("Phase 1 weights sum to %.4f, want 1.0", p1Total)
+	}
+
+	// Verify that the Phase 2 weights sum to 1.0.
+	p2Total := p2WeightProvenance + p2WeightPublishHygiene + p2WeightMaintainerRisk + p2WeightIdentityStability + p2WeightScorecard
+	if math.Abs(p2Total-1.0) > 0.001 {
+		t.Errorf("Phase 2 weights sum to %.4f, want 1.0", p2Total)
 	}
 }
 
