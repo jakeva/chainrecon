@@ -26,8 +26,7 @@ func NewScanCmd() *cobra.Command {
 
 	cmd.Flags().Int("depth", 20, "How many versions back to analyze for provenance history")
 	cmd.Flags().String("format", "table", "Output format: table, json")
-	cmd.Flags().Bool("no-github", false, "Skip GitHub API calls")
-	cmd.Flags().Bool("no-scorecard", false, "Skip OpenSSF Scorecard import")
+	cmd.Flags().Duration("timeout", 2*time.Minute, "Timeout for the entire scan")
 
 	return cmd
 }
@@ -35,14 +34,27 @@ func NewScanCmd() *cobra.Command {
 // runScan is the RunE handler for the scan command.
 func runScan(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
-	ctx := context.Background()
 
 	// Parse the package argument: name[@version].
 	packageName, requestedVersion := parsePackageArg(args[0])
 
 	depth, _ := cmd.Flags().GetInt("depth")
 	formatFlag, _ := cmd.Flags().GetString("format")
+	timeout, _ := cmd.Flags().GetDuration("timeout")
 	noCache, _ := cmd.Root().PersistentFlags().GetBool("no-cache")
+
+	if depth < 1 {
+		return fmt.Errorf("--depth must be at least 1")
+	}
+
+	switch strings.ToLower(formatFlag) {
+	case "table", "json":
+	default:
+		return fmt.Errorf("--format must be \"table\" or \"json\", got %q", formatFlag)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
 	// --- Cache setup ---
 	var store cache.Store

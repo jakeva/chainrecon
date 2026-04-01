@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"time"
@@ -72,7 +73,7 @@ func (r *registryClient) FetchPackageMetadata(ctx context.Context, packageName s
 		return &meta, nil
 	}
 
-	url := fmt.Sprintf("%s/%s", registryBaseURL, packageName)
+	url := fmt.Sprintf("%s/%s", registryBaseURL, url.PathEscape(packageName))
 	body, err := r.doRequestWithRetry(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("npm: fetch metadata for %q: %w", packageName, err)
@@ -105,7 +106,7 @@ func (r *registryClient) FetchDownloadCounts(ctx context.Context, packageName st
 		return &dl, nil
 	}
 
-	url := fmt.Sprintf("%s/%s", downloadsBaseURL, packageName)
+	url := fmt.Sprintf("%s/%s", downloadsBaseURL, url.PathEscape(packageName))
 	body, err := r.doRequestWithRetry(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("npm: fetch downloads for %q: %w", packageName, err)
@@ -139,7 +140,7 @@ func (r *registryClient) FetchDependentCount(ctx context.Context, packageName st
 		return result.Total, nil
 	}
 
-	url := fmt.Sprintf("%s/-/v1/search?text=dependencies:%s&size=1", registryBaseURL, packageName)
+	url := fmt.Sprintf("%s/-/v1/search?text=dependencies:%s&size=1", registryBaseURL, url.QueryEscape(packageName))
 	body, err := r.doRequestWithRetry(ctx, url)
 	if err != nil {
 		return 0, fmt.Errorf("npm: fetch dependent count for %q: %w", packageName, err)
