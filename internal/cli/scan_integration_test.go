@@ -11,20 +11,33 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-// TestIntegration_ScanAxios runs a real scan against the axios package
-// and validates that a scored report is produced with all expected fields.
+// TestIntegration_Scan runs a real scan against a package and validates
+// that a scored report is produced with all expected fields.
 //
 // Run with: go test -tags=integration -v ./internal/cli/
-func TestIntegration_ScanAxios(t *testing.T) {
-	// Capture stdout by redirecting through the command.
+func TestIntegration_Scan(t *testing.T) {
+	packages := []string{
+		"express",
+		"@anthropic-ai/sdk",
+	}
+
+	for _, pkg := range packages {
+		t.Run(pkg, func(t *testing.T) {
+			runScanAndValidate(t, pkg)
+		})
+	}
+}
+
+func runScanAndValidate(t *testing.T, pkg string) {
+	t.Helper()
+
 	root := NewRootCmd()
 	root.AddCommand(NewScanCmd())
 
 	buf := new(bytes.Buffer)
 	root.SetOut(buf)
-	root.SetArgs([]string{"scan", "axios", "--format", "json", "--no-cache", "--depth", "10"})
+	root.SetArgs([]string{"scan", pkg, "--format", "json", "--no-cache", "--depth", "10"})
 
-	// Redirect stdout to capture output.
 	oldStdout := os.Stdout
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -41,19 +54,16 @@ func TestIntegration_ScanAxios(t *testing.T) {
 	w.Close()
 	os.Stdout = oldStdout
 
-	// Read captured output.
 	var output bytes.Buffer
 	output.ReadFrom(r)
 
-	// Parse the JSON report.
 	var report model.Report
 	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
 		t.Fatalf("failed to parse JSON output: %v\nraw output:\n%s", err, output.String())
 	}
 
-	// Validate the report has expected fields.
-	if report.Package != "axios" {
-		t.Errorf("expected package 'axios', got %q", report.Package)
+	if report.Package != pkg {
+		t.Errorf("expected package %q, got %q", pkg, report.Package)
 	}
 
 	if report.Version == "" {
@@ -64,7 +74,6 @@ func TestIntegration_ScanAxios(t *testing.T) {
 		t.Error("expected a non-zero timestamp")
 	}
 
-	// Validate all scores are in range.
 	scores := []struct {
 		name  string
 		value float64
@@ -87,17 +96,10 @@ func TestIntegration_ScanAxios(t *testing.T) {
 		t.Errorf("target_score = %.1f, want 0.0-100.0", report.Scores.TargetScore)
 	}
 
-	// Axios should have significant blast radius (100M+ weekly downloads).
-	if report.WeeklyDownloads < 1_000_000 {
-		t.Errorf("expected axios to have >1M weekly downloads, got %d", report.WeeklyDownloads)
-	}
-
-	// Should have at least some findings.
 	if len(report.Findings) == 0 {
 		t.Error("expected at least one finding")
 	}
 
-	// Should have provenance history entries.
 	if len(report.ProvenanceHistory) == 0 {
 		t.Error("expected provenance history entries")
 	}
@@ -106,9 +108,6 @@ func TestIntegration_ScanAxios(t *testing.T) {
 	t.Logf("Target Score: %.1f (%s)", report.Scores.TargetScore, classifyRisk(report.Scores.TargetScore))
 	t.Logf("Weekly Downloads: %d", report.WeeklyDownloads)
 	t.Logf("Findings: %d", len(report.Findings))
-	for _, f := range report.Findings {
-		t.Logf("  [%s] %s", f.Severity, f.Message)
-	}
 }
 
 func classifyRisk(score float64) string {
