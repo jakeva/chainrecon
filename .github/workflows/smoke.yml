@@ -7,17 +7,19 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
-    name: Scan packages
+  known-targets:
+    name: Scan known targets
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         package:
           - axios
-          - express
           - "@anthropic-ai/sdk"
-          - lodash
+          - event-stream
+          - ua-parser-js
+          - colors
+          - node-ipc
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -31,7 +33,54 @@ jobs:
         run: go build -o chainrecon ./cmd/chainrecon
 
       - name: Scan ${{ matrix.package }}
-        run: ./chainrecon scan "${{ matrix.package }}" --timeout 90s
+        run: |
+          ./chainrecon scan "${{ matrix.package }}" --timeout 90s
+          ./chainrecon scan "${{ matrix.package }}" --format json --timeout 90s | jq .scores
 
-      - name: Scan ${{ matrix.package }} (JSON)
-        run: ./chainrecon scan "${{ matrix.package }}" --format json --timeout 90s | jq .scores
+  popular:
+    name: Scan popular packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "1.26"
+
+      - name: Build
+        run: go build -o chainrecon ./cmd/chainrecon
+
+      - name: Pick random packages from npm
+        id: pick
+        run: |
+          PACKAGES=$(curl -s "https://registry.npmjs.org/-/v1/search?text=boost-exact:true&popularity=1.0&size=250" \
+            | jq -r '.objects[].package.name' \
+            | shuf -n 5)
+
+          echo "Picked packages:"
+          echo "$PACKAGES"
+          echo "packages=$(echo "$PACKAGES" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+      - name: Scan packages
+        run: |
+          PACKAGES='${{ steps.pick.outputs.packages }}'
+          FAILED=0
+
+          for pkg in $(echo "$PACKAGES" | jq -r '.[]'); do
+            echo "::group::$pkg"
+            if ./chainrecon scan "$pkg" --timeout 90s && \
+               ./chainrecon scan "$pkg" --format json --timeout 90s | jq .scores; then
+              echo "::endgroup::"
+            else
+              echo "::endgroup::"
+              echo "::warning::scan failed for $pkg"
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::error::One or more scans failed"
+            exit 1
+          fi
