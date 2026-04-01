@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/chainrecon/chainrecon/internal/cache"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
@@ -96,16 +98,24 @@ func (c *attestationClient) FetchAttestations(ctx context.Context, packageName, 
 // Each returned VersionAttestation indicates whether SLSA provenance and/or a publish
 // attestation were found for that version.
 func (c *attestationClient) FetchVersionAttestations(ctx context.Context, packageName string, versions []string) ([]model.VersionAttestation, error) {
-	results := make([]model.VersionAttestation, 0, len(versions))
+	results := make([]model.VersionAttestation, len(versions))
 
-	for _, ver := range versions {
-		bundle, err := c.FetchAttestations(ctx, packageName, ver)
-		if err != nil {
-			return nil, fmt.Errorf("npm attestations: version %s: %w", ver, err)
-		}
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(5) // cap concurrency to avoid hammering the registry
 
-		va := classifyBundle(ver, bundle)
-		results = append(results, va)
+	for i, ver := range versions {
+		g.Go(func() error {
+			bundle, err := c.FetchAttestations(ctx, packageName, ver)
+			if err != nil {
+				return fmt.Errorf("npm attestations: version %s: %w", ver, err)
+			}
+			results[i] = classifyBundle(ver, bundle)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return results, nil
