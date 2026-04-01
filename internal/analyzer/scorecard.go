@@ -56,10 +56,11 @@ func (s *scorecardAnalyzer) Analyze(result *model.ScorecardResult) (model.Signal
 		inverted = 0
 	}
 
-	// Build detail from relevant checks.
+	// Build detail from relevant checks. A score of -1 means the check was
+	// not applicable or inconclusive, so we skip those.
 	var checkDetails []string
 	for _, check := range result.Checks {
-		if isRelevantCheck(check.Name) {
+		if isRelevantCheck(check.Name) && check.Score >= 0 {
 			checkDetails = append(checkDetails, fmt.Sprintf("%s: %d/10", check.Name, check.Score))
 		}
 	}
@@ -101,9 +102,9 @@ func buildScorecardFindings(result *model.ScorecardResult, inverted float64) []m
 		Detail:   fmt.Sprintf("Imported from scorecard.dev (inverted to %.1f for scoring)", inverted),
 	})
 
-	// Flag any critical individual checks.
+	// Flag any critical individual checks. Skip -1 (not applicable/inconclusive).
 	for _, check := range result.Checks {
-		if !isRelevantCheck(check.Name) {
+		if !isRelevantCheck(check.Name) || check.Score < 0 {
 			continue
 		}
 		if check.Score <= 2 {

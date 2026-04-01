@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chainrecon/chainrecon/internal/model"
@@ -67,6 +68,42 @@ func TestScorecardAnalyzer_BadScore(t *testing.T) {
 	// 1 overall HIGH + 2 individual check HIGHs = 3
 	if highFindings < 2 {
 		t.Errorf("expected at least 2 HIGH findings for bad checks, got %d", highFindings)
+	}
+}
+
+func TestScorecardAnalyzer_SkipsInconclusiveChecks(t *testing.T) {
+	a := NewScorecardAnalyzer()
+	result := &model.ScorecardResult{
+		Score: 7.0,
+		Checks: []model.ScorecardCheck{
+			{Name: "Branch-Protection", Score: -1, Reason: "internal error"},
+			{Name: "Signed-Releases", Score: -1, Reason: "no releases found"},
+			{Name: "Token-Permissions", Score: 0, Reason: "non-read permissions detected"},
+		},
+	}
+
+	score, findings := a.Analyze(result)
+
+	// Inverted: 10 - 7.0 = 3.0
+	if score.Score != 3.0 {
+		t.Errorf("inverted score = %.1f, want 3.0", score.Score)
+	}
+
+	// Only Token-Permissions (score 0) should produce a HIGH finding.
+	// Branch-Protection and Signed-Releases have -1 (inconclusive) and should be skipped.
+	highFindings := 0
+	for _, f := range findings {
+		if f.Severity == model.SeverityHigh {
+			highFindings++
+		}
+	}
+	if highFindings != 1 {
+		t.Errorf("expected 1 HIGH finding (Token-Permissions only), got %d", highFindings)
+	}
+
+	// Detail should not include -1 checks.
+	if strings.Contains(score.Detail, "Branch-Protection") {
+		t.Error("detail should not include inconclusive Branch-Protection check")
 	}
 }
 
