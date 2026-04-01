@@ -33,6 +33,12 @@ chainrecon scan axios --format json
 # Analyze the last 50 versions for provenance history
 chainrecon scan axios --depth 50
 
+# Set a custom timeout (default is 2 minutes)
+chainrecon scan axios --timeout 5m
+
+# Bypass the local response cache
+chainrecon scan axios --no-cache
+
 # Show version info
 chainrecon version
 ```
