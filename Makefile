@@ -8,7 +8,7 @@ LDFLAGS := -X github.com/chainrecon/chainrecon/internal/cli.Version=$(VERSION) \
 
 .DEFAULT_GOAL := build
 
-.PHONY: build test lint vet install clean integration-test
+.PHONY: build test lint vet install clean coverage integration-test
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o bin/chainrecon ./cmd/chainrecon
@@ -27,6 +27,11 @@ install:
 
 clean:
 	rm -rf bin/
+
+coverage:
+	go test -race -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "coverage report written to coverage.html"
 
 integration-test:
 	go test -tags=integration -race -v ./...
