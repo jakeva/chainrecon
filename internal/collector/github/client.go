@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/chainrecon/chainrecon/internal/cache"
@@ -18,18 +19,18 @@ import (
 var apiBaseURL = "https://api.github.com"
 
 const (
-	cacheBucket = "github_releases"
-	cacheTTL    = 1 * time.Hour
+	cacheTTL = 1 * time.Hour
+	maxPages = 3 // fetch up to 300 items per resource
 )
 
 // Client defines the interface for querying GitHub release and tag data.
 type Client interface {
 	// FetchReleases retrieves the releases for a GitHub repository.
-	// Returns an empty slice (not an error) if the repo has no releases.
+	// Returns nil (not an error) if the repo is not found.
 	FetchReleases(ctx context.Context, owner, repo string) ([]model.GitHubRelease, error)
 
 	// FetchTags retrieves the git tags for a GitHub repository.
-	// Returns an empty slice (not an error) if the repo has no tags.
+	// Returns nil (not an error) if the repo is not found.
 	FetchTags(ctx context.Context, owner, repo string) ([]model.GitHubTag, error)
 }
 
@@ -49,72 +50,54 @@ func NewClient(c cache.Store, token string) Client {
 	}
 }
 
-// FetchReleases retrieves up to 100 releases for a GitHub repository.
+// FetchReleases retrieves releases for a GitHub repository, paginating
+// up to maxPages pages of 100 results each.
 func (c *client) FetchReleases(ctx context.Context, owner, repo string) ([]model.GitHubRelease, error) {
 	cacheKey := owner + "/" + repo
+	const bucket = "github_releases"
 
-	cached, err := c.cache.Get(ctx, cacheBucket, cacheKey)
+	cached, err := c.cache.Get(ctx, bucket, cacheKey)
 	if err != nil {
-		return nil, fmt.Errorf("github: cache get %q: %w", cacheKey, err)
+		return nil, fmt.Errorf("github: cache get releases %q: %w", cacheKey, err)
 	}
 	if cached != nil {
 		var releases []model.GitHubRelease
 		if err := json.Unmarshal(cached, &releases); err != nil {
-			return nil, fmt.Errorf("github: unmarshal cached %q: %w", cacheKey, err)
+			return nil, fmt.Errorf("github: unmarshal cached releases %q: %w", cacheKey, err)
 		}
 		return releases, nil
 	}
 
-	reqURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=100",
+	startURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=100",
 		apiBaseURL, url.PathEscape(owner), url.PathEscape(repo))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	raw, err := c.fetchPaginated(ctx, startURL, cacheKey)
 	if err != nil {
-		return nil, fmt.Errorf("github: create request: %w", err)
+		return nil, err
 	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("github: execute request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("github: read response: %w", err)
-	}
-
-	if resp.StatusCode == http.StatusNotFound {
+	if raw == nil {
 		return nil, nil
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("github: unexpected status %d for %s: %s", resp.StatusCode, cacheKey, string(body))
-	}
-
 	var releases []model.GitHubRelease
-	if err := json.Unmarshal(body, &releases); err != nil {
-		return nil, fmt.Errorf("github: decode %q: %w", cacheKey, err)
+	if err := json.Unmarshal(raw, &releases); err != nil {
+		return nil, fmt.Errorf("github: decode releases %q: %w", cacheKey, err)
 	}
 
-	if err := c.cache.Set(ctx, cacheBucket, cacheKey, body, cacheTTL); err != nil {
-		return nil, fmt.Errorf("github: cache set %q: %w", cacheKey, err)
+	if err := c.cache.Set(ctx, bucket, cacheKey, raw, cacheTTL); err != nil {
+		return nil, fmt.Errorf("github: cache set releases %q: %w", cacheKey, err)
 	}
 
 	return releases, nil
 }
 
-const tagCacheBucket = "github_tags"
-
-// FetchTags retrieves up to 100 git tags for a GitHub repository.
+// FetchTags retrieves git tags for a GitHub repository, paginating
+// up to maxPages pages of 100 results each.
 func (c *client) FetchTags(ctx context.Context, owner, repo string) ([]model.GitHubTag, error) {
 	cacheKey := owner + "/" + repo
+	const bucket = "github_tags"
 
-	cached, err := c.cache.Get(ctx, tagCacheBucket, cacheKey)
+	cached, err := c.cache.Get(ctx, bucket, cacheKey)
 	if err != nil {
 		return nil, fmt.Errorf("github: cache get tags %q: %w", cacheKey, err)
 	}
@@ -126,45 +109,90 @@ func (c *client) FetchTags(ctx context.Context, owner, repo string) ([]model.Git
 		return tags, nil
 	}
 
-	reqURL := fmt.Sprintf("%s/repos/%s/%s/tags?per_page=100",
+	startURL := fmt.Sprintf("%s/repos/%s/%s/tags?per_page=100",
 		apiBaseURL, url.PathEscape(owner), url.PathEscape(repo))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	raw, err := c.fetchPaginated(ctx, startURL, cacheKey)
 	if err != nil {
-		return nil, fmt.Errorf("github: create request: %w", err)
+		return nil, err
 	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("github: execute request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("github: read response: %w", err)
-	}
-
-	if resp.StatusCode == http.StatusNotFound {
+	if raw == nil {
 		return nil, nil
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("github: unexpected status %d for tags %s: %s", resp.StatusCode, cacheKey, string(body))
-	}
-
 	var tags []model.GitHubTag
-	if err := json.Unmarshal(body, &tags); err != nil {
+	if err := json.Unmarshal(raw, &tags); err != nil {
 		return nil, fmt.Errorf("github: decode tags %q: %w", cacheKey, err)
 	}
 
-	if err := c.cache.Set(ctx, tagCacheBucket, cacheKey, body, cacheTTL); err != nil {
+	if err := c.cache.Set(ctx, bucket, cacheKey, raw, cacheTTL); err != nil {
 		return nil, fmt.Errorf("github: cache set tags %q: %w", cacheKey, err)
 	}
 
 	return tags, nil
+}
+
+// fetchPaginated fetches JSON arrays from the GitHub API, following Link
+// rel="next" headers up to maxPages. Returns the merged JSON array as raw
+// bytes, or nil for 404 responses.
+func (c *client) fetchPaginated(ctx context.Context, startURL, label string) ([]byte, error) {
+	var all []json.RawMessage
+	nextURL := startURL
+
+	for page := 0; page < maxPages && nextURL != ""; page++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, nextURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("github: create request: %w", err)
+		}
+		req.Header.Set("Accept", "application/vnd.github+json")
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("github: request %q: %w", label, err)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("github: read response %q: %w", label, err)
+		}
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, nil
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("github: status %d for %s: %s", resp.StatusCode, label, string(body))
+		}
+
+		var page_items []json.RawMessage
+		if err := json.Unmarshal(body, &page_items); err != nil {
+			return nil, fmt.Errorf("github: decode page %q: %w", label, err)
+		}
+		all = append(all, page_items...)
+
+		nextURL = parseNextLink(resp.Header.Get("Link"))
+	}
+
+	if len(all) == 0 {
+		return []byte("[]"), nil
+	}
+
+	return json.Marshal(all)
+}
+
+var linkNextRe = regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
+
+// parseNextLink extracts the "next" URL from a GitHub Link header.
+func parseNextLink(header string) string {
+	if header == "" {
+		return ""
+	}
+	m := linkNextRe.FindStringSubmatch(header)
+	if len(m) < 2 {
+		return ""
+	}
+	return m[1]
 }
