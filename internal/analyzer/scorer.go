@@ -6,13 +6,23 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-// Phase 1 weights for attack_surface_score (Section 3.2).
-// Scorecard is excluded in Phase 1, so the remaining signals sum to 1.0.
+// Weights for attack_surface_score (Section 3.2 / 6.5).
+// When Scorecard data is available, it accounts for 15% and the other
+// signals are scaled down proportionally. When unavailable, the original
+// Phase 1 weights are used.
 const (
-	weightProvenance       = 0.30
-	weightPublishHygiene   = 0.25
-	weightMaintainerRisk   = 0.25
-	weightIdentityStability = 0.20
+	// Phase 1 weights (no Scorecard, sum to 1.0).
+	p1WeightProvenance        = 0.30
+	p1WeightPublishHygiene    = 0.25
+	p1WeightMaintainerRisk    = 0.25
+	p1WeightIdentityStability = 0.20
+
+	// Phase 2 weights (with Scorecard, sum to 1.0).
+	p2WeightProvenance        = 0.255
+	p2WeightPublishHygiene    = 0.2125
+	p2WeightMaintainerRisk    = 0.2125
+	p2WeightIdentityStability = 0.17
+	p2WeightScorecard         = 0.15
 )
 
 // SignalInputs bundles the individual signal scores that feed into the
@@ -23,6 +33,7 @@ type SignalInputs struct {
 	MaintainerRisk    model.SignalScore
 	IdentityStability model.SignalScore
 	BlastRadius       model.SignalScore
+	Scorecard         *model.SignalScore // nil when Scorecard is unavailable/skipped
 }
 
 // Scorer computes composite scores from individual signal inputs and
@@ -40,24 +51,35 @@ type Scorer interface {
 // scorer is the default implementation of Scorer.
 type scorer struct{}
 
-// NewScorer returns a new Scorer that implements the Phase 1 scoring model.
+// NewScorer returns a new Scorer.
 func NewScorer() Scorer {
 	return &scorer{}
 }
 
-// ComputeScores implements the Section 3.2 composite scoring model.
+// ComputeScores implements the composite scoring model.
 //
-// attack_surface_score is a weighted average of Provenance, PublishingHygiene,
-// MaintainerRisk, and IdentityStability (each 0.0-10.0). The result is
-// 0.0-10.0.
+// When Scorecard data is available, it gets 15% weight and the other
+// signals are scaled down proportionally. When unavailable, the Phase 1
+// weights (summing to 1.0 across the four npm signals) are used.
 //
-// target_score = attack_surface_score * blast_radius_score, producing a value
-// in the range 0.0-100.0.
+// target_score = attack_surface_score * blast_radius_score
 func (s *scorer) ComputeScores(signals SignalInputs) model.Scores {
-	attackSurface := weightProvenance*signals.Provenance.Score +
-		weightPublishHygiene*signals.PublishingHygiene.Score +
-		weightMaintainerRisk*signals.MaintainerRisk.Score +
-		weightIdentityStability*signals.IdentityStability.Score
+	var attackSurface float64
+	var scorecardScore float64
+
+	if signals.Scorecard != nil {
+		scorecardScore = signals.Scorecard.Score
+		attackSurface = p2WeightProvenance*signals.Provenance.Score +
+			p2WeightPublishHygiene*signals.PublishingHygiene.Score +
+			p2WeightMaintainerRisk*signals.MaintainerRisk.Score +
+			p2WeightIdentityStability*signals.IdentityStability.Score +
+			p2WeightScorecard*scorecardScore
+	} else {
+		attackSurface = p1WeightProvenance*signals.Provenance.Score +
+			p1WeightPublishHygiene*signals.PublishingHygiene.Score +
+			p1WeightMaintainerRisk*signals.MaintainerRisk.Score +
+			p1WeightIdentityStability*signals.IdentityStability.Score
+	}
 
 	attackSurface = math.Round(attackSurface*10) / 10
 
@@ -69,7 +91,7 @@ func (s *scorer) ComputeScores(signals SignalInputs) model.Scores {
 		PublishingHygiene: signals.PublishingHygiene.Score,
 		MaintainerRisk:    signals.MaintainerRisk.Score,
 		IdentityStability: signals.IdentityStability.Score,
-		ScorecardRepo:     0.0, // Phase 2
+		ScorecardRepo:     scorecardScore,
 		BlastRadius:       signals.BlastRadius.Score,
 		AttackSurface:     attackSurface,
 		TargetScore:       targetScore,
@@ -77,11 +99,6 @@ func (s *scorer) ComputeScores(signals SignalInputs) model.Scores {
 }
 
 // ClassifyRisk returns the risk classification for the given target score.
-//
-//	>= 70.0 -> "CRITICAL"
-//	>= 50.0 -> "HIGH"
-//	>= 25.0 -> "MEDIUM"
-//	<  25.0 -> "LOW"
 func (s *scorer) ClassifyRisk(targetScore float64) string {
 	switch {
 	case targetScore >= 70.0:
