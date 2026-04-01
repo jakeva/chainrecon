@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
+
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -93,6 +95,22 @@ func TestTableFormatter_BoxDrawingCharacters(t *testing.T) {
 		if !strings.Contains(out, ch) {
 			t.Errorf("output missing box-drawing character %q", ch)
 		}
+	}
+}
+
+func TestPadRight_ANSIAware(t *testing.T) {
+	plain := "hello"
+	styled := lipgloss.NewStyle().Bold(true).Render("hello")
+
+	paddedPlain := padRight(plain, 10)
+	paddedStyled := padRight(styled, 10)
+
+	// Both should have 10 visible characters of width.
+	if lipgloss.Width(paddedPlain) != 10 {
+		t.Errorf("padRight(plain) visible width = %d, want 10", lipgloss.Width(paddedPlain))
+	}
+	if lipgloss.Width(paddedStyled) != 10 {
+		t.Errorf("padRight(styled) visible width = %d, want 10", lipgloss.Width(paddedStyled))
 	}
 }
 

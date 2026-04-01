@@ -261,9 +261,10 @@ func wrapText(text string, width int) []string {
 }
 
 // padRight pads s with trailing spaces so that it occupies exactly width
-// visible characters. If s is already wider than width it is returned as-is.
+// visible characters. Uses lipgloss.Width to correctly measure strings
+// that contain ANSI escape sequences or wide unicode characters.
 func padRight(s string, width int) string {
-	n := len(s)
+	n := lipgloss.Width(s)
 	if n >= width {
 		return s
 	}
