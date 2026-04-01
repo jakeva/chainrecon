@@ -16,7 +16,6 @@ compromise.`,
 		SilenceErrors: true,
 	}
 
-	cmd.PersistentFlags().Bool("verbose", false, "Enable verbose output")
 	cmd.PersistentFlags().Bool("no-cache", false, "Disable local caching of API responses")
 
 	return cmd
