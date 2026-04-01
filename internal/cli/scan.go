@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/chainrecon/chainrecon/internal/analyzer"
 	"github.com/chainrecon/chainrecon/internal/cache"
 	"github.com/chainrecon/chainrecon/internal/collector/npm"
@@ -99,23 +101,46 @@ func runScan(cmd *cobra.Command, args []string) error {
 		sortedVersions = sortedVersions[:depth]
 	}
 
-	// --- Fetch attestations ---
-	fmt.Fprintf(os.Stderr, "Fetching attestations for %d versions ...\n", len(sortedVersions))
-	attestations, err := attestClient.FetchVersionAttestations(ctx, packageName, sortedVersions)
-	if err != nil {
-		return fmt.Errorf("fetch attestations: %w", err)
-	}
+	// --- Fetch attestations, downloads, and dependents in parallel ---
+	fmt.Fprintf(os.Stderr, "Fetching attestations for %d versions, downloads, dependents ...\n", len(sortedVersions))
 
-	// --- Fetch download counts and dependent count ---
-	fmt.Fprintf(os.Stderr, "Fetching download statistics ...\n")
-	downloads, err := registry.FetchDownloadCounts(ctx, packageName)
-	if err != nil {
-		return fmt.Errorf("fetch downloads: %w", err)
-	}
+	var (
+		attestations   []model.VersionAttestation
+		downloads      *model.DownloadCount
+		dependentCount int
+	)
 
-	dependentCount, err := registry.FetchDependentCount(ctx, packageName)
-	if err != nil {
-		return fmt.Errorf("fetch dependent count: %w", err)
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		var err error
+		attestations, err = attestClient.FetchVersionAttestations(gctx, packageName, sortedVersions)
+		if err != nil {
+			return fmt.Errorf("fetch attestations: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		var err error
+		downloads, err = registry.FetchDownloadCounts(gctx, packageName)
+		if err != nil {
+			return fmt.Errorf("fetch downloads: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		var err error
+		dependentCount, err = registry.FetchDependentCount(gctx, packageName)
+		if err != nil {
+			return fmt.Errorf("fetch dependent count: %w", err)
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	// --- Run analyzers ---
