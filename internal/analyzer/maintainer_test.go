@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/chainrecon/chainrecon/internal/model"
@@ -259,6 +260,45 @@ func TestMaintainerAnalyzer_UnscopedPackageFinding(t *testing.T) {
 	}
 	if !foundMedium {
 		t.Error("expected MEDIUM finding for unscoped package with limited maintainers")
+	}
+}
+
+func TestMaintainerAnalyzer_BusFactor_VersionsWithoutNPMUser(t *testing.T) {
+	ma := NewMaintainerAnalyzer()
+
+	// 10 versions total, but only 4 have NPMUser set. One publisher owns all 4.
+	// Old behavior: 4/4 = 100% -> bus score 3.0
+	// Fixed behavior: 4/10 = 40% -> bus score 0.5
+	versions := make(map[string]model.VersionDetail)
+	for i := 0; i < 4; i++ {
+		ver := fmt.Sprintf("2.0.%d", i)
+		versions[ver] = model.VersionDetail{
+			Version: ver,
+			NPMUser: &model.NPMUser{Name: "maindev", Email: "dev@company.com"},
+		}
+	}
+	for i := 0; i < 6; i++ {
+		ver := fmt.Sprintf("1.0.%d", i)
+		versions[ver] = model.VersionDetail{Version: ver}
+	}
+
+	metadata := &model.PackageMetadata{
+		Name: "@org/mixed-pkg",
+		Maintainers: []model.Maintainer{
+			{Name: "maindev", Email: "dev@company.com"},
+			{Name: "other", Email: "other@company.com"},
+			{Name: "third", Email: "third@company.com"},
+		},
+		Versions: versions,
+	}
+
+	_, findings := ma.Analyze(metadata)
+
+	// 40% concentration should NOT trigger the >80% finding.
+	for _, f := range findings {
+		if f.Severity == model.SeverityHigh && f.Message == "Single publisher responsible for >80% of versions" {
+			t.Errorf("should not flag >80%% bus factor when real concentration is 40%%: %v", f)
+		}
 	}
 }
 

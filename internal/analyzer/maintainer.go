@@ -153,15 +153,14 @@ func (a *maintainerAnalyzer) Analyze(metadata *model.PackageMetadata) (model.Sig
 // publisher's name, and their percentage.
 func computeBusFactor(metadata *model.PackageMetadata) (float64, string, float64) {
 	publishCounts := make(map[string]int)
-	totalVersions := 0
 
 	for _, v := range metadata.Versions {
 		if v.NPMUser != nil && v.NPMUser.Name != "" {
 			publishCounts[v.NPMUser.Name]++
-			totalVersions++
 		}
 	}
 
+	totalVersions := len(metadata.Versions)
 	if totalVersions == 0 {
 		return 0.5, "", 0.0
 	}
