@@ -31,7 +31,7 @@ func NewIdentityAnalyzer() IdentityAnalyzer {
 
 // Scoring constants for identity signal checks.
 const (
-	identityScoreEmailChange      = 4.0 // email change between recent versions (Axios signal)
+	identityScoreEmailChange      = 4.0 // email change between recent versions
 	identityScoreNewPublisher     = 3.0 // unknown publisher on latest version
 	identityScoreCadenceAnomaly   = 2.0 // publishing cadence anomaly on latest version
 	identityScoreMultipleAuthors  = 1.0 // multiple different publishers across recent versions
