@@ -1,6 +1,6 @@
 # chainrecon
 
-**Find the next supply chain attack before the attacker does.**
+**Predict the next supply chain attack.**
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go)](https://go.dev)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
