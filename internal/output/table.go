@@ -249,16 +249,19 @@ func wrapText(text string, width int) []string {
 	}
 
 	var lines []string
-	current := words[0]
+	var buf strings.Builder
+	buf.WriteString(words[0])
 	for _, w := range words[1:] {
-		if len(current)+1+len(w) > width {
-			lines = append(lines, current)
-			current = w
+		if buf.Len()+1+len(w) > width {
+			lines = append(lines, buf.String())
+			buf.Reset()
+			buf.WriteString(w)
 		} else {
-			current += " " + w
+			buf.WriteByte(' ')
+			buf.WriteString(w)
 		}
 	}
-	lines = append(lines, current)
+	lines = append(lines, buf.String())
 	return lines
 }
 
