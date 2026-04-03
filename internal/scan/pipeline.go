@@ -4,6 +4,7 @@ package scan
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -256,8 +257,12 @@ func Run(ctx context.Context, packageName, version string, opts Options) (*model
 // mergeReleasesAndTags combines GitHub releases and git tags into a single
 // deduplicated slice of GitHubRelease.
 func mergeReleasesAndTags(releases []model.GitHubRelease, tags []model.GitHubTag) []model.GitHubRelease {
-	seen := make(map[string]bool, len(releases)+len(tags))
-	merged := make([]model.GitHubRelease, 0, len(releases)+len(tags))
+	n := len(releases)
+	if len(tags) > 0 && n <= math.MaxInt-len(tags) {
+		n += len(tags)
+	}
+	seen := make(map[string]bool, n)
+	merged := make([]model.GitHubRelease, 0, n)
 
 	for _, r := range releases {
 		if !seen[r.TagName] {
