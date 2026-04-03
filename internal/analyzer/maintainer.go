@@ -155,7 +155,7 @@ func computeBusFactor(metadata *model.PackageMetadata) (float64, string, float64
 	var topPublisher string
 	var topCount int
 	for name, count := range publishCounts {
-		if count > topCount {
+		if count > topCount || (count == topCount && name < topPublisher) {
 			topCount = count
 			topPublisher = name
 		}

@@ -95,7 +95,9 @@ func (r *Runner) RunContinuous(ctx context.Context) ([]Alert, error) {
 					return r.alerts, nil
 				}
 
+				r.mu.Lock()
 				ps, ok := r.state.Packages[entry.Name]
+				r.mu.Unlock()
 				if ok && time.Since(ps.LastScanTime) < PollInterval(ps.LastRiskLevel) {
 					continue
 				}
@@ -117,11 +119,15 @@ func (r *Runner) Alerts() []Alert {
 
 // State returns the current state for persistence.
 func (r *Runner) State() *state.State {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	return r.state
 }
 
 func (r *Runner) pollAndScan(ctx context.Context, entry watchlist.Entry) error {
+	r.mu.Lock()
 	ps := r.state.Packages[entry.Name]
+	r.mu.Unlock()
 
 	r.logf("Polling %s ...\n", entry.Name)
 	result, err := r.poller.Poll(ctx, entry.Name, ps.LastScannedVersion, ps.ETag)
@@ -133,7 +139,9 @@ func (r *Runner) pollAndScan(ctx context.Context, entry watchlist.Entry) error {
 	if !result.Changed && ps.LastScannedVersion != "" {
 		r.logf("  %s: no change (v%s)\n", entry.Name, result.LatestVersion)
 		// Update ETag even if no version change.
+		r.mu.Lock()
 		r.state.Update(entry.Name, ps.LastScannedVersion, ps.LastTargetScore, ps.LastRiskLevel, result.ETag)
+		r.mu.Unlock()
 		return nil
 	}
 
@@ -146,7 +154,9 @@ func (r *Runner) pollAndScan(ctx context.Context, entry watchlist.Entry) error {
 	risk := analyzer.ClassifyRisk(report.Scores.TargetScore)
 	r.logf("  %s: score=%.1f (%s)\n", entry.Name, report.Scores.TargetScore, risk)
 
+	r.mu.Lock()
 	r.state.Update(entry.Name, result.LatestVersion, report.Scores.TargetScore, risk, result.ETag)
+	r.mu.Unlock()
 
 	threshold := r.watchlist.EffectiveThreshold(entry)
 	if threshold > 0 && report.Scores.TargetScore >= threshold {
@@ -168,9 +178,7 @@ func (r *Runner) pollAndScan(ctx context.Context, entry watchlist.Entry) error {
 // PollInterval returns the polling interval for a given risk level.
 func PollInterval(risk string) time.Duration {
 	switch risk {
-	case "CRITICAL":
-		return 2 * time.Minute
-	case "HIGH":
+	case "CRITICAL", "HIGH":
 		return 2 * time.Minute
 	case "MEDIUM":
 		return 10 * time.Minute
