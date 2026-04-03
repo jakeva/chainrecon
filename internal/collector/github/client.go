@@ -168,11 +168,11 @@ func (c *client) fetchPaginated(ctx context.Context, startURL, label string) ([]
 			return nil, fmt.Errorf("github: status %d for %s: %s", resp.StatusCode, label, string(body))
 		}
 
-		var page_items []json.RawMessage
-		if err := json.Unmarshal(body, &page_items); err != nil {
+		var pageItems []json.RawMessage
+		if err := json.Unmarshal(body, &pageItems); err != nil {
 			return nil, fmt.Errorf("github: decode page %q: %w", label, err)
 		}
-		all = append(all, page_items...)
+		all = append(all, pageItems...)
 
 		nextURL = parseNextLink(resp.Header.Get("Link"))
 	}

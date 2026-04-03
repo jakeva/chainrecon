@@ -124,9 +124,7 @@ func TestScorer_ComputeScores(t *testing.T) {
 	}
 }
 
-func TestScorer_ClassifyRisk(t *testing.T) {
-	s := NewScorer()
-
+func TestClassifyRisk(t *testing.T) {
 	tests := []struct {
 		name        string
 		targetScore float64
@@ -146,7 +144,7 @@ func TestScorer_ClassifyRisk(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := s.ClassifyRisk(tc.targetScore)
+			got := ClassifyRisk(tc.targetScore)
 			if got != tc.wantRisk {
 				t.Errorf("ClassifyRisk(%.1f) = %q, want %q", tc.targetScore, got, tc.wantRisk)
 			}
@@ -245,7 +243,7 @@ func TestScorer_EndToEnd_RiskClassification(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			scores := s.ComputeScores(tc.signals)
-			risk := s.ClassifyRisk(scores.TargetScore)
+			risk := ClassifyRisk(scores.TargetScore)
 			if risk != tc.wantRisk {
 				t.Errorf("risk = %q (target=%.1f), want %q", risk, scores.TargetScore, tc.wantRisk)
 			}
