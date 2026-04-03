@@ -51,17 +51,15 @@ $ chainrecon scan axios
 
 ## Signals
 
-| Signal | Weight | Description |
-|---|---|---|
-| `Provenance Consistency` | 25.5% | Tracks npm provenance attestations across versions. Detects drops and gaps. |
-| `Publishing Hygiene` | 21.25% | Classifies publish method: CI/CD, direct token, mixed, or legacy. |
-| `Maintainer Concentration` | 21.25% | Bus factor, single publisher detection, personal vs org email. |
-| `Identity Stability` | 17% | Email changes, new publishers on established packages, cadence anomalies. |
-| `OpenSSF Scorecard` | 15% | Imported from [scorecard.dev](https://scorecard.dev), inverted (higher = more vulnerable). |
-| `Blast Radius` | multiplier | Weekly downloads, dependent count, security tooling multiplier. |
-| `Tag Correlation` | finding | Flags npm versions with no matching GitHub release or tag. |
-
-> Weights shown are with Scorecard enabled. Without Scorecard, the four core signals rebalance to 30/25/25/20.
+| Signal | Description |
+|---|---|
+| `Provenance Consistency` | Tracks npm provenance attestations across versions. Detects drops and gaps. |
+| `Publishing Hygiene` | Classifies publish method: CI/CD, direct token, mixed, or legacy. |
+| `Maintainer Concentration` | Bus factor, single publisher detection, personal vs org email. |
+| `Identity Stability` | Email changes, new publishers on established packages, cadence anomalies. |
+| `OpenSSF Scorecard` | Imported from [scorecard.dev](https://scorecard.dev), inverted (higher = more vulnerable). |
+| `Blast Radius` | Weekly downloads, dependent count, security tooling multiplier. |
+| `Tag Correlation` | Flags npm versions with no matching GitHub release or tag. |
 
 ## Scoring
 
@@ -85,19 +83,33 @@ The score indicates how attractive a package is as a target, not whether it is c
 | Command | Description |
 |---|---|
 | `chainrecon scan <package>` | Scan an npm package |
+| `chainrecon watch` | Monitor packages for new versions |
 | `chainrecon version` | Print version info |
+
+### scan flags
 
 | Flag | Default | Description |
 |---|---|---|
-| `--format` | `table` | Output format (`table` or `json`) |
+| `--format` | `table` | Output format (`table`, `json`, or `sarif`) |
 | `--depth` | `20` | Number of versions to check for provenance history |
+| `--threshold` | `0` | Exit code 1 if target score meets or exceeds this value |
 | `--timeout` | `2m` | Request timeout |
 | `--no-cache` | `false` | Bypass local cache |
 | `--no-scorecard` | `false` | Skip OpenSSF Scorecard lookup |
 | `--no-github` | `false` | Skip GitHub release/tag lookup |
 | `--github-token` | | GitHub API token for higher rate limits |
 
-`GITHUB_TOKEN` env var is also supported.
+### watch flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--config` | `.chainrecon.yml` | Path to watchlist YAML file |
+| `--once` | `false` | Single pass mode for CI |
+| `--state-file` | | Path to state file for persistence between runs |
+| `--depth` | `20` | Number of versions to check per scan |
+| `--timeout` | `2m` | Per-scan timeout |
+
+`GITHUB_TOKEN` env var is supported for both commands.
 
 ## Build from source
 

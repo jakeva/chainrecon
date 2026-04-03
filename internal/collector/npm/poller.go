@@ -56,7 +56,7 @@ func (p *poller) Poll(ctx context.Context, packageName, lastKnownVersion, etag s
 	if err != nil {
 		return PollResult{}, fmt.Errorf("poll %s: %w", packageName, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	newETag := resp.Header.Get("ETag")
 

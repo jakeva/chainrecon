@@ -10,7 +10,7 @@ import (
 func TestPoller_FirstPoll(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", `"abc123"`)
-		w.Write([]byte(`{"dist-tags":{"latest":"1.2.3"}}`))
+		_, _ = w.Write([]byte(`{"dist-tags":{"latest":"1.2.3"}}`))
 	}))
 	defer srv.Close()
 
@@ -66,7 +66,7 @@ func TestPoller_NotModified(t *testing.T) {
 func TestPoller_VersionChanged(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", `"def456"`)
-		w.Write([]byte(`{"dist-tags":{"latest":"1.3.0"}}`))
+		_, _ = w.Write([]byte(`{"dist-tags":{"latest":"1.3.0"}}`))
 	}))
 	defer srv.Close()
 
@@ -94,7 +94,7 @@ func TestPoller_VersionChanged(t *testing.T) {
 func TestPoller_SameVersion(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("ETag", `"def456"`)
-		w.Write([]byte(`{"dist-tags":{"latest":"1.2.3"}}`))
+		_, _ = w.Write([]byte(`{"dist-tags":{"latest":"1.2.3"}}`))
 	}))
 	defer srv.Close()
 
@@ -132,7 +132,7 @@ func TestPoller_ServerError(t *testing.T) {
 
 func TestPoller_NoLatestDistTag(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"dist-tags":{}}`))
+		_, _ = w.Write([]byte(`{"dist-tags":{}}`))
 	}))
 	defer srv.Close()
 
