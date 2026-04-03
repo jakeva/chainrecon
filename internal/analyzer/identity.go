@@ -12,7 +12,7 @@ import (
 // IdentityAnalyzer evaluates the stability of publisher identity across
 // package versions. It detects maintainer email changes, new unknown
 // publishers, and publishing cadence anomalies that may indicate account
-// compromise or takeover. See Section 6.6 of the project definition.
+// compromise or takeover.
 type IdentityAnalyzer interface {
 	// Analyze scores the identity stability signal and generates findings
 	// for the given package metadata. The sortedVersions slice is ordered

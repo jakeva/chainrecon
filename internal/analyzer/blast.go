@@ -11,7 +11,7 @@ import (
 
 // BlastRadiusAnalyzer evaluates the ecosystem impact of a compromised package
 // by scoring its weekly download volume, dependent count, and ecosystem
-// category. See Section 6.4 of the project definition.
+// category.
 type BlastRadiusAnalyzer interface {
 	// Analyze computes a blast-radius signal score and associated findings
 	// for the given package download count, dependent count, and name.
@@ -26,7 +26,7 @@ func NewBlastRadiusAnalyzer() BlastRadiusAnalyzer {
 	return &blastRadiusAnalyzer{}
 }
 
-// Ecosystem category multipliers (Section 6.4).
+// Ecosystem category multipliers.
 const (
 	multiplierSecurityTooling  = 2.0
 	multiplierCICDTooling      = 1.5

@@ -120,7 +120,7 @@ func TestScorecardAnalyzer_ScoreWithScorecard(t *testing.T) {
 		Scorecard:         &scorecardScore,
 	})
 
-	// Phase 2 weights with scorecard at 4.0:
+	// Extended weights with scorecard at 4.0:
 	// 0.255*5 + 0.2125*5 + 0.2125*5 + 0.17*5 + 0.15*4 = 1.275+1.0625+1.0625+0.85+0.6 = 4.85 -> 4.8
 	if scores.AttackSurface < 4.7 || scores.AttackSurface > 4.9 {
 		t.Errorf("AttackSurface = %.2f, want ~4.8", scores.AttackSurface)

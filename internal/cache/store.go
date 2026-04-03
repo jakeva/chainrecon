@@ -12,7 +12,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-// TTL constants for cached data per Section 7 of the project definition.
+// TTL constants for cached API responses.
 const (
 	PackageMetadataTTL = 1 * time.Hour
 	AttestationDataTTL = 24 * time.Hour

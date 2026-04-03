@@ -27,7 +27,7 @@ func NewProvenanceAnalyzer() ProvenanceAnalyzer {
 	return &provenanceAnalyzer{}
 }
 
-// Base scores for each provenance state (Section 6.1).
+// Base scores for each provenance state.
 const (
 	baseScoreNever        = 5.0
 	baseScoreActive       = 1.0
@@ -58,7 +58,7 @@ func (p *provenanceAnalyzer) Analyze(attestations []model.VersionAttestation) (m
 	return signal, findings
 }
 
-// ClassifyState implements the provenance state machine (Section 3.3).
+// ClassifyState implements the provenance state machine.
 // The attestations slice is ordered newest-first (index 0 = latest version).
 func (p *provenanceAnalyzer) ClassifyState(attestations []model.VersionAttestation) model.ProvenanceState {
 	if len(attestations) == 0 {

@@ -6,23 +6,22 @@ import (
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
-// Weights for attack_surface_score (Section 3.2 / 6.5).
+// Weights for attack_surface_score.
 // When Scorecard data is available, it accounts for 15% and the other
-// signals are scaled down proportionally. When unavailable, the original
-// Phase 1 weights are used.
+// signals are scaled down proportionally.
 const (
-	// Phase 1 weights (no Scorecard, sum to 1.0).
-	p1WeightProvenance        = 0.30
-	p1WeightPublishHygiene    = 0.25
-	p1WeightMaintainerRisk    = 0.25
-	p1WeightIdentityStability = 0.20
+	// Base weights (no Scorecard, sum to 1.0).
+	baseWeightProvenance        = 0.30
+	baseWeightPublishHygiene    = 0.25
+	baseWeightMaintainerRisk    = 0.25
+	baseWeightIdentityStability = 0.20
 
-	// Phase 2 weights (with Scorecard, sum to 1.0).
-	p2WeightProvenance        = 0.255
-	p2WeightPublishHygiene    = 0.2125
-	p2WeightMaintainerRisk    = 0.2125
-	p2WeightIdentityStability = 0.17
-	p2WeightScorecard         = 0.15
+	// Extended weights (with Scorecard, sum to 1.0).
+	extWeightProvenance        = 0.255
+	extWeightPublishHygiene    = 0.2125
+	extWeightMaintainerRisk    = 0.2125
+	extWeightIdentityStability = 0.17
+	extWeightScorecard         = 0.15
 )
 
 // SignalInputs bundles the individual signal scores that feed into the
@@ -54,7 +53,7 @@ func NewScorer() Scorer {
 // ComputeScores implements the composite scoring model.
 //
 // When Scorecard data is available, it gets 15% weight and the other
-// signals are scaled down proportionally. When unavailable, the Phase 1
+// signals are scaled down proportionally. When unavailable, the base
 // weights (summing to 1.0 across the four npm signals) are used.
 //
 // target_score = attack_surface_score * blast_radius_score
@@ -64,16 +63,16 @@ func (s *scorer) ComputeScores(signals SignalInputs) model.Scores {
 
 	if signals.Scorecard != nil {
 		scorecardScore = signals.Scorecard.Score
-		attackSurface = p2WeightProvenance*signals.Provenance.Score +
-			p2WeightPublishHygiene*signals.PublishingHygiene.Score +
-			p2WeightMaintainerRisk*signals.MaintainerRisk.Score +
-			p2WeightIdentityStability*signals.IdentityStability.Score +
-			p2WeightScorecard*scorecardScore
+		attackSurface = extWeightProvenance*signals.Provenance.Score +
+			extWeightPublishHygiene*signals.PublishingHygiene.Score +
+			extWeightMaintainerRisk*signals.MaintainerRisk.Score +
+			extWeightIdentityStability*signals.IdentityStability.Score +
+			extWeightScorecard*scorecardScore
 	} else {
-		attackSurface = p1WeightProvenance*signals.Provenance.Score +
-			p1WeightPublishHygiene*signals.PublishingHygiene.Score +
-			p1WeightMaintainerRisk*signals.MaintainerRisk.Score +
-			p1WeightIdentityStability*signals.IdentityStability.Score
+		attackSurface = baseWeightProvenance*signals.Provenance.Score +
+			baseWeightPublishHygiene*signals.PublishingHygiene.Score +
+			baseWeightMaintainerRisk*signals.MaintainerRisk.Score +
+			baseWeightIdentityStability*signals.IdentityStability.Score
 	}
 
 	attackSurface = math.Round(attackSurface*10) / 10

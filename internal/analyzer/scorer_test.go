@@ -116,9 +116,9 @@ func TestScorer_ComputeScores(t *testing.T) {
 				t.Errorf("BlastRadius = %.2f, want %.2f", scores.BlastRadius, tc.signals.BlastRadius.Score)
 			}
 
-			// ScorecardRepo should be 0.0 in Phase 1.
+			// ScorecardRepo should be 0.0 when no Scorecard data is provided.
 			if scores.ScorecardRepo != 0.0 {
-				t.Errorf("ScorecardRepo = %.2f, want 0.0 (Phase 1)", scores.ScorecardRepo)
+				t.Errorf("ScorecardRepo = %.2f, want 0.0 (no scorecard)", scores.ScorecardRepo)
 			}
 		})
 	}
@@ -153,16 +153,16 @@ func TestClassifyRisk(t *testing.T) {
 }
 
 func TestScorer_WeightsSumToOne(t *testing.T) {
-	// Verify that the Phase 1 weights sum to 1.0.
-	p1Total := p1WeightProvenance + p1WeightPublishHygiene + p1WeightMaintainerRisk + p1WeightIdentityStability
-	if math.Abs(p1Total-1.0) > 0.001 {
-		t.Errorf("Phase 1 weights sum to %.4f, want 1.0", p1Total)
+	// Verify that the base weights sum to 1.0.
+	baseTotal := baseWeightProvenance + baseWeightPublishHygiene + baseWeightMaintainerRisk + baseWeightIdentityStability
+	if math.Abs(baseTotal-1.0) > 0.001 {
+		t.Errorf("base weights sum to %.4f, want 1.0", baseTotal)
 	}
 
-	// Verify that the Phase 2 weights sum to 1.0.
-	p2Total := p2WeightProvenance + p2WeightPublishHygiene + p2WeightMaintainerRisk + p2WeightIdentityStability + p2WeightScorecard
-	if math.Abs(p2Total-1.0) > 0.001 {
-		t.Errorf("Phase 2 weights sum to %.4f, want 1.0", p2Total)
+	// Verify that the extended weights (with Scorecard) sum to 1.0.
+	extTotal := extWeightProvenance + extWeightPublishHygiene + extWeightMaintainerRisk + extWeightIdentityStability + extWeightScorecard
+	if math.Abs(extTotal-1.0) > 0.001 {
+		t.Errorf("extended weights sum to %.4f, want 1.0", extTotal)
 	}
 }
 
