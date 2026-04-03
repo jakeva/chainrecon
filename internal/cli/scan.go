@@ -57,11 +57,14 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--depth must be at least 1")
 	}
 
-	switch strings.ToLower(formatFlag) {
+	formatFlag = strings.ToLower(formatFlag)
+	switch formatFlag {
 	case "table", "json":
 	default:
 		return fmt.Errorf("--format must be \"table\" or \"json\", got %q", formatFlag)
 	}
+
+	quiet := formatFlag == "json"
 
 	// Fall back to GITHUB_TOKEN env var.
 	if githubToken == "" {
@@ -93,7 +96,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	githubClient := gh.NewClient(store, githubToken)
 
 	// --- Fetch package metadata ---
-	fmt.Fprintf(os.Stderr, "Fetching metadata for %s ...\n", packageName)
+	logProgress(quiet, "Fetching metadata for %s ...\n", packageName)
 	metadata, err := registry.FetchPackageMetadata(ctx, packageName)
 	if err != nil {
 		return fmt.Errorf("fetch metadata: %w", err)
@@ -108,7 +111,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("no version specified and no 'latest' dist-tag found for %s", packageName)
 		}
 	}
-	fmt.Fprintf(os.Stderr, "Target version: %s\n", targetVersion)
+	logProgress(quiet, "Target version: %s\n", targetVersion)
 
 	// --- Collect sorted versions up to --depth ---
 	sortedVersions := registry.GetSortedVersions(metadata)
@@ -121,14 +124,16 @@ func runScan(cmd *cobra.Command, args []string) error {
 	hasGitHubRepo := repoOwner != "" && repoName != ""
 
 	// --- Fetch all data in parallel ---
-	fmt.Fprintf(os.Stderr, "Fetching attestations, downloads, dependents")
-	if hasGitHubRepo && !noScorecard {
-		fmt.Fprintf(os.Stderr, ", scorecard")
+	if !quiet {
+		fmt.Fprintf(os.Stderr, "Fetching attestations, downloads, dependents")
+		if hasGitHubRepo && !noScorecard {
+			fmt.Fprintf(os.Stderr, ", scorecard")
+		}
+		if hasGitHubRepo && !noGitHub {
+			fmt.Fprintf(os.Stderr, ", releases, tags")
+		}
+		fmt.Fprintf(os.Stderr, " ...\n")
 	}
-	if hasGitHubRepo && !noGitHub {
-		fmt.Fprintf(os.Stderr, ", releases, tags")
-	}
-	fmt.Fprintf(os.Stderr, " ...\n")
 
 	var (
 		attestations    []model.VersionAttestation
@@ -174,7 +179,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 			scorecardResult, err = scorecardClient.FetchScore(gctx, repoOwner, repoName)
 			if err != nil {
 				// Scorecard failures are non-fatal.
-				fmt.Fprintf(os.Stderr, "Warning: scorecard lookup failed: %v\n", err)
+				logProgress(quiet, "Warning: scorecard lookup failed: %v\n", err)
 				return nil
 			}
 			return nil
@@ -186,7 +191,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 			var err error
 			githubReleases, err = githubClient.FetchReleases(gctx, repoOwner, repoName)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: GitHub release fetch failed: %v\n", err)
+				logProgress(quiet, "Warning: GitHub release fetch failed: %v\n", err)
 				return nil
 			}
 			return nil
@@ -195,7 +200,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 			var err error
 			githubTags, err = githubClient.FetchTags(gctx, repoOwner, repoName)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: GitHub tag fetch failed: %v\n", err)
+				logProgress(quiet, "Warning: GitHub tag fetch failed: %v\n", err)
 				return nil
 			}
 			return nil
@@ -207,7 +212,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	// --- Run analyzers ---
-	fmt.Fprintf(os.Stderr, "Analyzing ...\n")
+	logProgress(quiet, "Analyzing ...\n")
 
 	provenanceAnalyzer := analyzer.NewProvenanceAnalyzer()
 	provenanceScore, provenanceFindings := provenanceAnalyzer.Analyze(attestations)
@@ -353,4 +358,11 @@ func mergeReleasesAndTags(releases []model.GitHubRelease, tags []model.GitHubTag
 		}
 	}
 	return merged
+}
+
+// logProgress writes a formatted message to stderr unless quiet mode is active.
+func logProgress(quiet bool, format string, args ...any) {
+	if !quiet {
+		fmt.Fprintf(os.Stderr, format, args...)
+	}
 }

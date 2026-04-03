@@ -25,8 +25,9 @@ var (
 const (
 	userAgentDefault = "chainrecon"
 
-	metadataBucket  = "npm_metadata"
-	downloadsBucket = "npm_downloads"
+	metadataBucket   = "npm_metadata"
+	downloadsBucket  = "npm_downloads"
+	dependentsBucket = "npm_dependents"
 
 	maxRetries        = 3
 	initialBackoff    = 1 * time.Second
@@ -138,8 +139,7 @@ func (r *registryClient) FetchDownloadCounts(ctx context.Context, packageName st
 // FetchDependentCount returns the number of packages that depend on the given package.
 // It queries the npm search API with a dependencies filter and returns the total count.
 func (r *registryClient) FetchDependentCount(ctx context.Context, packageName string) (int, error) {
-	cacheKey := "dependents:" + packageName
-	cached, err := r.cache.Get(ctx, metadataBucket, cacheKey)
+	cached, err := r.cache.Get(ctx, dependentsBucket, packageName)
 	if err != nil {
 		return 0, fmt.Errorf("npm: cache get dependent count for %q: %w", packageName, err)
 	}
@@ -162,7 +162,7 @@ func (r *registryClient) FetchDependentCount(ctx context.Context, packageName st
 		return 0, fmt.Errorf("npm: unmarshal dependent count for %q: %w", packageName, err)
 	}
 
-	if err := r.cache.Set(ctx, metadataBucket, cacheKey, body, cache.PackageMetadataTTL); err != nil {
+	if err := r.cache.Set(ctx, dependentsBucket, packageName, body, cache.PackageMetadataTTL); err != nil {
 		return 0, fmt.Errorf("npm: cache set dependent count for %q: %w", packageName, err)
 	}
 

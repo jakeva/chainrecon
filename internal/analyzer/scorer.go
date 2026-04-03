@@ -36,16 +36,11 @@ type SignalInputs struct {
 	Scorecard         *model.SignalScore // nil when Scorecard is unavailable/skipped
 }
 
-// Scorer computes composite scores from individual signal inputs and
-// classifies the resulting risk level.
+// Scorer computes composite scores from individual signal inputs.
 type Scorer interface {
 	// ComputeScores calculates the attack surface score, blast radius score,
 	// and target score from the provided signal inputs.
 	ComputeScores(signals SignalInputs) model.Scores
-
-	// ClassifyRisk maps a target score to a risk classification string:
-	// "CRITICAL", "HIGH", "MEDIUM", or "LOW".
-	ClassifyRisk(targetScore float64) string
 }
 
 // scorer is the default implementation of Scorer.
@@ -98,8 +93,8 @@ func (s *scorer) ComputeScores(signals SignalInputs) model.Scores {
 	}
 }
 
-// ClassifyRisk returns the risk classification for the given target score.
-func (s *scorer) ClassifyRisk(targetScore float64) string {
+// ClassifyRisk maps a target score to a risk classification string.
+func ClassifyRisk(targetScore float64) string {
 	switch {
 	case targetScore >= 70.0:
 		return "CRITICAL"

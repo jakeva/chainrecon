@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/chainrecon/chainrecon/internal/analyzer"
 	"github.com/chainrecon/chainrecon/internal/format"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
@@ -127,10 +128,10 @@ func (t *TableFormatter) buildSignalRows(report *model.Report) []signalRow {
 
 // buildSummaryRows returns the aggregate rows (attack surface and target score).
 func (t *TableFormatter) buildSummaryRows(report *model.Report) []signalRow {
-	targetLabel := targetLabel(report.Scores.TargetScore)
+	label := analyzer.ClassifyRisk(report.Scores.TargetScore)
 	return []signalRow{
 		{signal: "Attack Surface", score: fmt.Sprintf("%.1f/10", report.Scores.AttackSurface), detail: ""},
-		{signal: "Target Score", score: fmt.Sprintf("%.1f", report.Scores.TargetScore), detail: targetLabel},
+		{signal: "Target Score", score: fmt.Sprintf("%.1f", report.Scores.TargetScore), detail: label},
 	}
 }
 
@@ -219,20 +220,6 @@ func (t *TableFormatter) colorSeverity(sev model.Severity) string {
 		return t.info.Render(label)
 	default:
 		return label
-	}
-}
-
-// targetLabel returns a human-readable risk category for the given target score.
-func targetLabel(score float64) string {
-	switch {
-	case score >= 70:
-		return "CRITICAL"
-	case score >= 50:
-		return "HIGH"
-	case score >= 25:
-		return "MEDIUM"
-	default:
-		return "LOW"
 	}
 }
 
