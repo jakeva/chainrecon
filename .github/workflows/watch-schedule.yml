@@ -1,0 +1,74 @@
+name: Watch Dependencies
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: "Path to watchlist YAML file"
+        required: false
+        type: string
+        default: .chainrecon.yml
+    secrets:
+      github-token:
+        description: "GitHub token for API rate limits and state branch push"
+        required: false
+
+jobs:
+  watch:
+    name: Watch for new versions
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-version: "1.26"
+
+      - name: Install chainrecon
+        run: go install github.com/chainrecon/chainrecon/cmd/chainrecon@latest
+
+      - name: Pull state from chainrecon-state branch
+        run: |
+          git fetch origin chainrecon-state 2>/dev/null || true
+          if git rev-parse origin/chainrecon-state >/dev/null 2>&1; then
+            git show origin/chainrecon-state:state.json > state.json 2>/dev/null || echo '{}' > state.json
+          else
+            echo '{}' > state.json
+          fi
+
+      - name: Run watch
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token || github.token }}
+        run: |
+          chainrecon watch \
+            --config "${{ inputs.config-path }}" \
+            --once \
+            --state-file state.json
+
+      - name: Push state to chainrecon-state branch
+        if: always()
+        run: |
+          if [ ! -f state.json ]; then
+            echo "No state file to push."
+            exit 0
+          fi
+
+          # Use git plumbing to avoid touching the working tree.
+          BLOB=$(git hash-object -w state.json)
+          TREE=$(printf "100644 blob %s\tstate.json\n" "$BLOB" | git mktree)
+
+          PARENT=""
+          if git rev-parse origin/chainrecon-state >/dev/null 2>&1; then
+            PARENT="-p origin/chainrecon-state"
+          fi
+
+          COMMIT=$(git commit-tree $TREE $PARENT -m "chainrecon: update state $(date -u +%Y-%m-%dT%H:%M:%SZ)")
+          git update-ref refs/heads/chainrecon-state "$COMMIT"
+          git push origin chainrecon-state --force-with-lease 2>/dev/null || \
+            git push origin chainrecon-state

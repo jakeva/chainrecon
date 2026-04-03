@@ -1,0 +1,16 @@
+# Example: monitor a watchlist on a schedule.
+# Copy this file to .github/workflows/ in your repository.
+# Requires a .chainrecon.yml watchlist at the repo root.
+
+name: Watch Dependencies
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+
+jobs:
+  watch:
+    uses: chainrecon/chainrecon/.github/workflows/watch-schedule.yml@main
+    with:
+      config-path: .chainrecon.yml
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}

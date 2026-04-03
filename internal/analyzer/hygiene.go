@@ -10,7 +10,7 @@ import (
 
 // HygieneAnalyzer evaluates the publishing hygiene of an npm package by
 // inspecting attestation provenance, publisher identity, and whether trusted
-// publishing is enforced. See Section 6.2 of the project definition.
+// publishing is enforced.
 type HygieneAnalyzer interface {
 	// Analyze computes a publishing-hygiene signal score and associated
 	// findings for the given package metadata and version attestations.

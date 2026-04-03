@@ -20,7 +20,7 @@ type MaintainerAnalyzer interface {
 type maintainerAnalyzer struct{}
 
 // NewMaintainerAnalyzer returns a MaintainerAnalyzer that evaluates maintainer
-// concentration risk according to Section 6.3 of the project definition.
+// concentration risk.
 func NewMaintainerAnalyzer() MaintainerAnalyzer {
 	return &maintainerAnalyzer{}
 }
