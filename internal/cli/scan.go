@@ -29,11 +29,12 @@ func NewScanCmd() *cobra.Command {
 	}
 
 	cmd.Flags().Int("depth", 20, "How many versions back to analyze for provenance history")
-	cmd.Flags().String("format", "table", "Output format: table, json")
+	cmd.Flags().String("format", "table", "Output format: table, json, sarif")
 	cmd.Flags().Duration("timeout", 2*time.Minute, "Timeout for the entire scan")
 	cmd.Flags().String("github-token", "", "GitHub personal access token (or set GITHUB_TOKEN)")
 	cmd.Flags().Bool("no-scorecard", false, "Skip OpenSSF Scorecard lookup")
 	cmd.Flags().Bool("no-github", false, "Skip GitHub tag correlation")
+	cmd.Flags().Float64("threshold", 0, "Exit with code 1 if target score meets or exceeds this value")
 
 	return cmd
 }
@@ -52,6 +53,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	githubToken, _ := cmd.Flags().GetString("github-token")
 	noScorecard, _ := cmd.Flags().GetBool("no-scorecard")
 	noGitHub, _ := cmd.Flags().GetBool("no-github")
+	threshold, _ := cmd.Flags().GetFloat64("threshold")
 
 	if depth < 1 {
 		return fmt.Errorf("--depth must be at least 1")
@@ -59,12 +61,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	formatFlag = strings.ToLower(formatFlag)
 	switch formatFlag {
-	case "table", "json":
+	case "table", "json", "sarif":
 	default:
-		return fmt.Errorf("--format must be \"table\" or \"json\", got %q", formatFlag)
+		return fmt.Errorf("--format must be \"table\", \"json\", or \"sarif\", got %q", formatFlag)
 	}
 
-	quiet := formatFlag == "json"
+	quiet := formatFlag != "table"
 
 	// Fall back to GITHUB_TOKEN env var.
 	if githubToken == "" {
@@ -280,6 +282,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	allFindings = append(allFindings, identityFindings...)
 	allFindings = append(allFindings, scorecardFindings...)
 	allFindings = append(allFindings, tagFindings...)
+	model.SortFindings(allFindings)
 
 	// --- Build report ---
 	var repoURL string
@@ -303,9 +306,11 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	// --- Format output ---
 	var formatter output.Formatter
-	switch strings.ToLower(formatFlag) {
+	switch formatFlag {
 	case "json":
 		formatter = output.NewJSONFormatter()
+	case "sarif":
+		formatter = output.NewSARIFFormatter(Version)
 	default:
 		formatter = output.NewTableFormatter()
 	}
@@ -317,6 +322,11 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprint(os.Stdout, result)
 	_, _ = fmt.Fprintln(os.Stdout)
+
+	// --- Threshold check ---
+	if threshold > 0 && scores.TargetScore >= threshold {
+		return fmt.Errorf("target score %.1f meets or exceeds threshold %.1f", scores.TargetScore, threshold)
+	}
 
 	return nil
 }
