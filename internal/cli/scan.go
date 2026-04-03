@@ -7,15 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
-	"github.com/chainrecon/chainrecon/internal/analyzer"
-	"github.com/chainrecon/chainrecon/internal/cache"
-	gh "github.com/chainrecon/chainrecon/internal/collector/github"
-	"github.com/chainrecon/chainrecon/internal/collector/npm"
-	"github.com/chainrecon/chainrecon/internal/collector/scorecard"
-	"github.com/chainrecon/chainrecon/internal/model"
 	"github.com/chainrecon/chainrecon/internal/output"
+	"github.com/chainrecon/chainrecon/internal/scan"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +36,6 @@ func NewScanCmd() *cobra.Command {
 func runScan(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
-	// Parse the package argument: name[@version].
 	packageName, requestedVersion := parsePackageArg(args[0])
 
 	depth, _ := cmd.Flags().GetInt("depth")
@@ -68,7 +60,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	quiet := formatFlag != "table"
 
-	// Fall back to GITHUB_TOKEN env var.
 	if githubToken == "" {
 		githubToken = os.Getenv("GITHUB_TOKEN")
 	}
@@ -76,235 +67,31 @@ func runScan(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	npm.SetUserAgent("chainrecon/" + Version)
-
-	// --- Cache setup ---
-	var store cache.Store
-	if noCache {
-		store = cache.NopStore{}
+	// Build log function that respects quiet mode.
+	var logf func(string, ...any)
+	if quiet {
+		logf = nil
 	} else {
-		bs, err := cache.NewBoltStore()
-		if err != nil {
-			return fmt.Errorf("init cache: %w", err)
+		logf = func(format string, args ...any) {
+			fmt.Fprintf(os.Stderr, format, args...)
 		}
-		store = bs
 	}
-	defer func() { _ = store.Close() }()
 
-	// --- Clients ---
-	registry := npm.NewRegistryClient(store)
-	attestClient := npm.NewAttestationClient(store)
-	scorecardClient := scorecard.NewClient(store)
-	githubClient := gh.NewClient(store, githubToken)
-
-	// --- Fetch package metadata ---
-	logProgress(quiet, "Fetching metadata for %s ...\n", packageName)
-	metadata, err := registry.FetchPackageMetadata(ctx, packageName)
+	report, err := scan.Run(ctx, packageName, requestedVersion, scan.Options{
+		Depth:       depth,
+		Timeout:     timeout,
+		GitHubToken: githubToken,
+		NoScorecard: noScorecard,
+		NoGitHub:    noGitHub,
+		NoCache:     noCache,
+		UserAgent:   "chainrecon/" + Version,
+		LogFunc:     logf,
+	})
 	if err != nil {
-		return fmt.Errorf("fetch metadata: %w", err)
-	}
-
-	// --- Determine target version ---
-	targetVersion := requestedVersion
-	if targetVersion == "" {
-		if latest, ok := metadata.DistTags["latest"]; ok {
-			targetVersion = latest
-		} else {
-			return fmt.Errorf("no version specified and no 'latest' dist-tag found for %s", packageName)
-		}
-	}
-	logProgress(quiet, "Target version: %s\n", targetVersion)
-
-	// --- Collect sorted versions up to --depth ---
-	sortedVersions := registry.GetSortedVersions(metadata)
-	if len(sortedVersions) > depth {
-		sortedVersions = sortedVersions[:depth]
-	}
-
-	// --- Resolve GitHub repo for Scorecard and tag correlation ---
-	repoOwner, repoName := gh.ParseRepoURL(metadata)
-	hasGitHubRepo := repoOwner != "" && repoName != ""
-
-	// --- Fetch all data in parallel ---
-	if !quiet {
-		fmt.Fprintf(os.Stderr, "Fetching attestations, downloads, dependents")
-		if hasGitHubRepo && !noScorecard {
-			fmt.Fprintf(os.Stderr, ", scorecard")
-		}
-		if hasGitHubRepo && !noGitHub {
-			fmt.Fprintf(os.Stderr, ", releases, tags")
-		}
-		fmt.Fprintf(os.Stderr, " ...\n")
-	}
-
-	var (
-		attestations    []model.VersionAttestation
-		downloads       *model.DownloadCount
-		dependentCount  int
-		scorecardResult *model.ScorecardResult
-		githubReleases  []model.GitHubRelease
-		githubTags      []model.GitHubTag
-	)
-
-	g, gctx := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		var err error
-		attestations, err = attestClient.FetchVersionAttestations(gctx, packageName, sortedVersions)
-		if err != nil {
-			return fmt.Errorf("fetch attestations: %w", err)
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		var err error
-		downloads, err = registry.FetchDownloadCounts(gctx, packageName)
-		if err != nil {
-			return fmt.Errorf("fetch downloads: %w", err)
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		var err error
-		dependentCount, err = registry.FetchDependentCount(gctx, packageName)
-		if err != nil {
-			return fmt.Errorf("fetch dependent count: %w", err)
-		}
-		return nil
-	})
-
-	if hasGitHubRepo && !noScorecard {
-		g.Go(func() error {
-			var err error
-			scorecardResult, err = scorecardClient.FetchScore(gctx, repoOwner, repoName)
-			if err != nil {
-				// Scorecard failures are non-fatal.
-				logProgress(quiet, "Warning: scorecard lookup failed: %v\n", err)
-				return nil
-			}
-			return nil
-		})
-	}
-
-	if hasGitHubRepo && !noGitHub {
-		g.Go(func() error {
-			var err error
-			githubReleases, err = githubClient.FetchReleases(gctx, repoOwner, repoName)
-			if err != nil {
-				logProgress(quiet, "Warning: GitHub release fetch failed: %v\n", err)
-				return nil
-			}
-			return nil
-		})
-		g.Go(func() error {
-			var err error
-			githubTags, err = githubClient.FetchTags(gctx, repoOwner, repoName)
-			if err != nil {
-				logProgress(quiet, "Warning: GitHub tag fetch failed: %v\n", err)
-				return nil
-			}
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
 		return err
 	}
 
-	// --- Run analyzers ---
-	logProgress(quiet, "Analyzing ...\n")
-
-	provenanceAnalyzer := analyzer.NewProvenanceAnalyzer()
-	provenanceScore, provenanceFindings := provenanceAnalyzer.Analyze(attestations)
-
-	hygieneAnalyzer := analyzer.NewHygieneAnalyzer()
-	hygieneScore, hygieneFindings := hygieneAnalyzer.Analyze(metadata, attestations)
-
-	maintainerAnalyzer := analyzer.NewMaintainerAnalyzer()
-	maintainerScore, maintainerFindings := maintainerAnalyzer.Analyze(metadata)
-
-	blastAnalyzer := analyzer.NewBlastRadiusAnalyzer()
-	blastScore, blastFindings := blastAnalyzer.Analyze(downloads.Downloads, dependentCount, packageName)
-
-	identityAnalyzer := analyzer.NewIdentityAnalyzer()
-	identityScore, identityFindings := identityAnalyzer.Analyze(metadata, sortedVersions)
-
-	// Scorecard analysis.
-	scorecardAnalyzer := analyzer.NewScorecardAnalyzer()
-	scorecardScore, scorecardFindings := scorecardAnalyzer.Analyze(scorecardResult)
-
-	// Tag correlation analysis: merge releases and tags into a single set.
-	var tagFindings []model.Finding
-	if githubReleases != nil || githubTags != nil {
-		merged := mergeReleasesAndTags(githubReleases, githubTags)
-		tagAnalyzer := analyzer.NewTagCorrelationAnalyzer()
-		tagFindings = tagAnalyzer.Analyze(sortedVersions, merged)
-	}
-
-	// --- Composite scoring ---
-	s := analyzer.NewScorer()
-	signalInputs := analyzer.SignalInputs{
-		Provenance:        provenanceScore,
-		PublishingHygiene: hygieneScore,
-		MaintainerRisk:    maintainerScore,
-		IdentityStability: identityScore,
-		BlastRadius:       blastScore,
-	}
-	// Only include Scorecard in the weighted score if we have data or attempted lookup.
-	if hasGitHubRepo && !noScorecard {
-		signalInputs.Scorecard = &scorecardScore
-	}
-	scores := s.ComputeScores(signalInputs)
-
-	// --- Build provenance history ---
-	provenanceHistory := make([]model.ProvenanceVersion, len(attestations))
-	for i, a := range attestations {
-		state := model.ProvenanceNever
-		if a.HasAnyProvenance {
-			state = model.ProvenanceActive
-		}
-		provenanceHistory[i] = model.ProvenanceVersion{
-			Version:    a.Version,
-			State:      state,
-			HasSLSA:    a.HasSLSA,
-			HasPublish: a.HasPublish,
-		}
-	}
-
-	// --- Aggregate findings ---
-	var allFindings []model.Finding
-	allFindings = append(allFindings, provenanceFindings...)
-	allFindings = append(allFindings, hygieneFindings...)
-	allFindings = append(allFindings, maintainerFindings...)
-	allFindings = append(allFindings, blastFindings...)
-	allFindings = append(allFindings, identityFindings...)
-	allFindings = append(allFindings, scorecardFindings...)
-	allFindings = append(allFindings, tagFindings...)
-	model.SortFindings(allFindings)
-
-	// --- Build report ---
-	var repoURL string
-	if hasGitHubRepo {
-		repoURL = fmt.Sprintf("https://github.com/%s/%s", repoOwner, repoName)
-	}
-
-	report := &model.Report{
-		Package:           packageName,
-		Version:           targetVersion,
-		Description:       metadata.Description,
-		RepositoryURL:     repoURL,
-		Timestamp:         time.Now().UTC(),
-		Scores:            scores,
-		Findings:          allFindings,
-		ProvenanceHistory: provenanceHistory,
-		Maintainers:       metadata.Maintainers,
-		WeeklyDownloads:   downloads.Downloads,
-		DependentCount:    dependentCount,
-	}
-
-	// --- Format output ---
+	// Format output.
 	var formatter output.Formatter
 	switch formatFlag {
 	case "json":
@@ -323,9 +110,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprint(os.Stdout, result)
 	_, _ = fmt.Fprintln(os.Stdout)
 
-	// --- Threshold check ---
-	if threshold > 0 && scores.TargetScore >= threshold {
-		return fmt.Errorf("target score %.1f meets or exceeds threshold %.1f", scores.TargetScore, threshold)
+	// Threshold check.
+	if threshold > 0 && report.Scores.TargetScore >= threshold {
+		return fmt.Errorf("target score %.1f meets or exceeds threshold %.1f", report.Scores.TargetScore, threshold)
 	}
 
 	return nil
@@ -335,9 +122,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 // into its components. For scoped packages (e.g. @scope/pkg@1.0.0) the scope is
 // preserved in the package name.
 func parsePackageArg(arg string) (name, version string) {
-	// Handle scoped packages: @scope/pkg@version
 	if strings.HasPrefix(arg, "@") {
-		// Find the second @ which separates name from version.
 		rest := arg[1:]
 		idx := strings.Index(rest, "@")
 		if idx == -1 {
@@ -346,35 +131,11 @@ func parsePackageArg(arg string) (name, version string) {
 		return arg[:idx+1], rest[idx+1:]
 	}
 
-	// Unscoped: pkg@version
 	idx := strings.Index(arg, "@")
 	if idx == -1 {
 		return arg, ""
 	}
 	return arg[:idx], arg[idx+1:]
-}
-
-// mergeReleasesAndTags combines GitHub releases and git tags into a single
-// deduplicated slice of GitHubRelease. Many projects create git tags without
-// formal GitHub releases, so checking only releases would produce false
-// positives in tag correlation.
-func mergeReleasesAndTags(releases []model.GitHubRelease, tags []model.GitHubTag) []model.GitHubRelease {
-	seen := make(map[string]bool, len(releases)+len(tags))
-	merged := make([]model.GitHubRelease, 0, len(releases)+len(tags))
-
-	for _, r := range releases {
-		if !seen[r.TagName] {
-			seen[r.TagName] = true
-			merged = append(merged, r)
-		}
-	}
-	for _, t := range tags {
-		if !seen[t.Name] {
-			seen[t.Name] = true
-			merged = append(merged, model.GitHubRelease{TagName: t.Name})
-		}
-	}
-	return merged
 }
 
 // logProgress writes a formatted message to stderr unless quiet mode is active.
