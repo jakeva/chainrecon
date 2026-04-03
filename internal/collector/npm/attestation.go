@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/chainrecon/chainrecon/internal/cache"
+	"github.com/chainrecon/chainrecon/internal/collector"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -41,7 +42,7 @@ type attestationClient struct {
 func NewAttestationClient(c cache.Store) AttestationClient {
 	return &attestationClient{
 		cache:      c,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: collector.NewHTTPClient(30 * time.Second),
 	}
 }
 

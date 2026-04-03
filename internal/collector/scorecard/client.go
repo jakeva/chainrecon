@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chainrecon/chainrecon/internal/cache"
+	"github.com/chainrecon/chainrecon/internal/collector"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -36,7 +37,7 @@ type client struct {
 // NewClient creates a new Scorecard API client.
 func NewClient(c cache.Store) Client {
 	return &client{
-		httpClient: &http.Client{Timeout: 15 * time.Second},
+		httpClient: collector.NewHTTPClient(15 * time.Second),
 		cache:      c,
 	}
 }
