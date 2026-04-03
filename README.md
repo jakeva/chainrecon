@@ -9,7 +9,10 @@
 chainrecon profiles npm packages from the attacker's perspective, surfacing the signals that make a package an attractive target for compromise before an attack happens.
 
 ```bash
+brew install chainrecon/tap/chainrecon
+# or
 go install github.com/chainrecon/chainrecon/cmd/chainrecon@latest
+
 chainrecon scan axios
 ```
 
