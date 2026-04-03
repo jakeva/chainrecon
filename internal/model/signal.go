@@ -1,5 +1,7 @@
 package model
 
+import "slices"
+
 // ProvenanceState classifies a package's provenance history.
 type ProvenanceState string
 
@@ -43,4 +45,20 @@ type Finding struct {
 	Signal   string   `json:"signal"`
 	Message  string   `json:"message"`
 	Detail   string   `json:"detail"`
+}
+
+// severityOrder maps severity levels to sort priority (lower = more severe).
+var severityOrder = map[Severity]int{
+	SeverityCritical: 0,
+	SeverityHigh:     1,
+	SeverityMedium:   2,
+	SeverityLow:      3,
+	SeverityInfo:     4,
+}
+
+// SortFindings sorts findings by severity, most severe first.
+func SortFindings(findings []Finding) {
+	slices.SortStableFunc(findings, func(a, b Finding) int {
+		return severityOrder[a.Severity] - severityOrder[b.Severity]
+	})
 }
