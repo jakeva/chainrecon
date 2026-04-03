@@ -137,10 +137,3 @@ func parsePackageArg(arg string) (name, version string) {
 	}
 	return arg[:idx], arg[idx+1:]
 }
-
-// logProgress writes a formatted message to stderr unless quiet mode is active.
-func logProgress(quiet bool, format string, args ...any) {
-	if !quiet {
-		fmt.Fprintf(os.Stderr, format, args...)
-	}
-}
