@@ -45,6 +45,7 @@ brews:
   - repository:
       owner: chainrecon
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/chainrecon/chainrecon
     description: Find the next supply chain attack before the attacker does.
     license: Apache-2.0
