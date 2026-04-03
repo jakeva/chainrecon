@@ -282,9 +282,16 @@ func runScan(cmd *cobra.Command, args []string) error {
 	allFindings = append(allFindings, tagFindings...)
 
 	// --- Build report ---
+	var repoURL string
+	if hasGitHubRepo {
+		repoURL = fmt.Sprintf("https://github.com/%s/%s", repoOwner, repoName)
+	}
+
 	report := &model.Report{
 		Package:           packageName,
 		Version:           targetVersion,
+		Description:       metadata.Description,
+		RepositoryURL:     repoURL,
 		Timestamp:         time.Now().UTC(),
 		Scores:            scores,
 		Findings:          allFindings,
