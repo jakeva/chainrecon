@@ -5,14 +5,20 @@
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go)](https://go.dev)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/chainrecon/chainrecon/actions/workflows/ci.yml/badge.svg)](https://github.com/chainrecon/chainrecon/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/chainrecon/chainrecon)](https://github.com/chainrecon/chainrecon/releases/latest)
+[![Homebrew](https://img.shields.io/badge/Homebrew-chainrecon%2Ftap-FBB040?logo=homebrew)](https://github.com/chainrecon/homebrew-tap)
 
 chainrecon profiles npm packages from the attacker's perspective, surfacing the signals that make a package an attractive target for compromise before an attack happens.
 
+## Install
+
 ```bash
 brew install chainrecon/tap/chainrecon
-# or
-go install github.com/chainrecon/chainrecon/cmd/chainrecon@latest
+```
 
+## Quick start
+
+```bash
 chainrecon scan axios
 ```
 
@@ -47,16 +53,17 @@ chainrecon scan axios
 
 ## Signals
 
-| Signal | Description |
-|---|---|
-| Provenance Consistency | Tracks npm provenance attestations across versions. Detects drops and gaps. |
-| Publishing Hygiene | Classifies publish method: CI/CD, direct token, mixed, or legacy. |
-| Maintainer Concentration | Bus factor, single publisher detection, personal vs org email. |
-| Blast Radius | Weekly downloads, dependent count, security tooling multiplier. |
-| Identity Stability | Email changes, new publishers on established packages, cadence anomalies. |
-| OpenSSF Scorecard | Imported from scorecard.dev, inverted to match convention (higher = more vulnerable). Weighted 15%. |
+| Signal | Weight | Description |
+|---|---|---|
+| `Provenance Consistency` | 25.5% | Tracks npm provenance attestations across versions. Detects drops and gaps. |
+| `Publishing Hygiene` | 21.25% | Classifies publish method: CI/CD, direct token, mixed, or legacy. |
+| `Maintainer Concentration` | 21.25% | Bus factor, single publisher detection, personal vs org email. |
+| `Identity Stability` | 17% | Email changes, new publishers on established packages, cadence anomalies. |
+| `OpenSSF Scorecard` | 15% | Imported from [scorecard.dev](https://scorecard.dev), inverted (higher = more vulnerable). |
+| `Blast Radius` | multiplier | Weekly downloads, dependent count, security tooling multiplier. |
+| `Tag Correlation` | finding | Flags npm versions with no matching GitHub release or tag. |
 
-Tag correlation compares npm versions against GitHub releases and tags, flagging versions with no matching tag.
+> Weights shown are with Scorecard enabled. Without Scorecard, the four core signals rebalance to 30/25/25/20.
 
 ## Scoring
 
@@ -64,30 +71,33 @@ Tag correlation compares npm versions against GitHub releases and tags, flagging
 target_score = attack_surface × blast_radius
 ```
 
-Each signal produces a 0 to 10 score. Attack surface is a weighted average. Target score ranges 0 to 100.
+Attack surface is a weighted average of the signals above (0 to 10). Blast radius scales it. Target score ranges 0 to 100.
 
-| Rating | Score |
+| | Score |
 |---|---|
-| LOW | Below 25 |
-| MEDIUM | 25 to 49 |
-| HIGH | 50 to 69 |
-| CRITICAL | 70+ |
+| ![LOW](https://img.shields.io/badge/LOW-3CB371) | Below 25 |
+| ![MEDIUM](https://img.shields.io/badge/MEDIUM-F0AD4E) | 25 to 49 |
+| ![HIGH](https://img.shields.io/badge/HIGH-E87D2F) | 50 to 69 |
+| ![CRITICAL](https://img.shields.io/badge/CRITICAL-D9534F) | 70+ |
 
 The score indicates how attractive a package is as a target, not whether it is compromised.
 
-## Usage
+## CLI reference
 
-```bash
-chainrecon scan axios              # scan a package
-chainrecon scan axios --format json # JSON output
-chainrecon scan axios --depth 50   # check 50 versions for provenance history
-chainrecon scan axios --timeout 5m # custom timeout (default 2m)
-chainrecon scan axios --no-cache   # bypass local cache
-chainrecon scan axios --no-scorecard # skip Scorecard lookup
-chainrecon scan axios --no-github  # skip GitHub lookup
-chainrecon scan axios --github-token ghp_xxx # higher rate limits
-chainrecon version                 # print version
-```
+| Command | Description |
+|---|---|
+| `chainrecon scan <package>` | Scan an npm package |
+| `chainrecon version` | Print version info |
+
+| Flag | Default | Description |
+|---|---|---|
+| `--format` | `table` | Output format (`table` or `json`) |
+| `--depth` | `20` | Number of versions to check for provenance history |
+| `--timeout` | `2m` | Request timeout |
+| `--no-cache` | `false` | Bypass local cache |
+| `--no-scorecard` | `false` | Skip OpenSSF Scorecard lookup |
+| `--no-github` | `false` | Skip GitHub release/tag lookup |
+| `--github-token` | | GitHub API token for higher rate limits |
 
 `GITHUB_TOKEN` env var is also supported.
 
