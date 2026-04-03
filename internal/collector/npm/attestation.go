@@ -189,10 +189,10 @@ func classifyBundle(version string, bundle *model.AttestationBundle) model.Versi
 	va := model.VersionAttestation{Version: version}
 
 	for _, att := range bundle.Attestations {
-		if strings.Contains(att.PredicateType, "https://slsa.dev/provenance") {
+		if strings.HasPrefix(att.PredicateType, "https://slsa.dev/provenance") {
 			va.HasSLSA = true
 		}
-		if strings.Contains(att.PredicateType, "https://github.com/npm/attestation/tree/main/specs/publish") {
+		if strings.HasPrefix(att.PredicateType, "https://github.com/npm/attestation/tree/main/specs/publish") {
 			va.HasPublish = true
 		}
 	}

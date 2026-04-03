@@ -3,7 +3,6 @@ package analyzer
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -216,31 +215,23 @@ func (a *identityAnalyzer) detectCadenceAnomaly(metadata *model.PackageMetadata,
 		return false
 	}
 
-	// Resolve publish times for each version, sorted newest-first.
-	type versionTime struct {
-		version string
-		t       time.Time
-	}
-	var vts []versionTime
+	// Resolve publish times for each version. The versions slice is already
+	// sorted newest-first, so we preserve that order.
+	times := make([]time.Time, 0, len(versions))
 	for _, v := range versions {
 		if t, ok := metadata.Time[v]; ok {
-			vts = append(vts, versionTime{version: v, t: t})
+			times = append(times, t)
 		}
 	}
 
-	if len(vts) < 3 {
+	if len(times) < 3 {
 		return false
 	}
 
-	// Ensure the times are sorted newest-first (same order as versions).
-	sort.Slice(vts, func(i, j int) bool {
-		return vts[i].t.After(vts[j].t)
-	})
-
 	// Compute gaps between consecutive versions (newest to oldest).
-	var gaps []time.Duration
-	for i := 0; i < len(vts)-1; i++ {
-		gap := vts[i].t.Sub(vts[i+1].t)
+	gaps := make([]time.Duration, 0, len(times)-1)
+	for i := 0; i < len(times)-1; i++ {
+		gap := times[i].Sub(times[i+1])
 		if gap < 0 {
 			gap = -gap
 		}
@@ -273,7 +264,7 @@ func (a *identityAnalyzer) detectCadenceAnomaly(metadata *model.PackageMetadata,
 // detectMultiplePublishers checks whether more than one distinct _npmUser
 // name published versions within the inspection window.
 func (a *identityAnalyzer) detectMultiplePublishers(metadata *model.PackageMetadata, versions []string) bool {
-	publishers := make(map[string]bool)
+	publishers := make(map[string]bool, len(versions))
 
 	for _, v := range versions {
 		vd, ok := metadata.Versions[v]

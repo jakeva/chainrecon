@@ -25,12 +25,12 @@ func NewScorecardAnalyzer() ScorecardAnalyzer {
 }
 
 // Supply chain relevant checks we extract from the Scorecard result.
-var relevantChecks = []string{
-	"Dangerous-Workflow",
-	"Token-Permissions",
-	"Pinned-Dependencies",
-	"Branch-Protection",
-	"Signed-Releases",
+var relevantCheckSet = map[string]bool{
+	"Dangerous-Workflow":  true,
+	"Token-Permissions":   true,
+	"Pinned-Dependencies": true,
+	"Branch-Protection":   true,
+	"Signed-Releases":     true,
 }
 
 // Analyze converts a Scorecard result into a chainrecon signal score.
@@ -56,35 +56,11 @@ func (s *scorecardAnalyzer) Analyze(result *model.ScorecardResult) (model.Signal
 		inverted = 0
 	}
 
-	// Build detail from relevant checks. A score of -1 means the check was
-	// not applicable or inconclusive, so we skip those.
+	// Single pass over checks: build detail strings and flag critical checks.
 	var checkDetails []string
-	for _, check := range result.Checks {
-		if isRelevantCheck(check.Name) && check.Score >= 0 {
-			checkDetails = append(checkDetails, fmt.Sprintf("%s: %d/10", check.Name, check.Score))
-		}
-	}
-
-	detail := fmt.Sprintf("Scorecard %.1f/10 (inverted to %.1f)", result.Score, inverted)
-	if len(checkDetails) > 0 {
-		detail += " | " + strings.Join(checkDetails, ", ")
-	}
-
-	signalScore := model.SignalScore{
-		Name:   "scorecard",
-		Score:  inverted,
-		Detail: detail,
-	}
-
-	findings := buildScorecardFindings(result, inverted)
-
-	return signalScore, findings
-}
-
-func buildScorecardFindings(result *model.ScorecardResult, inverted float64) []model.Finding {
 	var findings []model.Finding
 
-	// Overall finding.
+	// Overall finding first.
 	severity := model.SeverityInfo
 	switch {
 	case inverted >= 7.0:
@@ -102,11 +78,11 @@ func buildScorecardFindings(result *model.ScorecardResult, inverted float64) []m
 		Detail:   fmt.Sprintf("Imported from scorecard.dev (inverted to %.1f for scoring)", inverted),
 	})
 
-	// Flag any critical individual checks. Skip -1 (not applicable/inconclusive).
 	for _, check := range result.Checks {
-		if !isRelevantCheck(check.Name) || check.Score < 0 {
+		if !relevantCheckSet[check.Name] || check.Score < 0 {
 			continue
 		}
+		checkDetails = append(checkDetails, fmt.Sprintf("%s: %d/10", check.Name, check.Score))
 		if check.Score <= 2 {
 			findings = append(findings, model.Finding{
 				Severity: model.SeverityHigh,
@@ -117,14 +93,16 @@ func buildScorecardFindings(result *model.ScorecardResult, inverted float64) []m
 		}
 	}
 
-	return findings
-}
-
-func isRelevantCheck(name string) bool {
-	for _, c := range relevantChecks {
-		if c == name {
-			return true
-		}
+	detail := fmt.Sprintf("Scorecard %.1f/10 (inverted to %.1f)", result.Score, inverted)
+	if len(checkDetails) > 0 {
+		detail += " | " + strings.Join(checkDetails, ", ")
 	}
-	return false
+
+	signalScore := model.SignalScore{
+		Name:   "scorecard",
+		Score:  inverted,
+		Detail: detail,
+	}
+
+	return signalScore, findings
 }

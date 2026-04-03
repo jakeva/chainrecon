@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/chainrecon/chainrecon/internal/model"
@@ -64,7 +65,7 @@ func (t *tagCorrelationAnalyzer) Analyze(versions []string, releases []model.Git
 		severity = model.SeverityLow
 	}
 	// If the most recent version (first in the sorted list) has no tag, that's more concerning.
-	if len(versions) > 0 && contains(unmatched, versions[0]) {
+	if len(versions) > 0 && slices.Contains(unmatched, versions[0]) {
 		severity = model.SeverityHigh
 	}
 
@@ -89,11 +90,3 @@ func normalizeTag(tag string) string {
 	return strings.TrimPrefix(tag, "v")
 }
 
-func contains(slice []string, val string) bool {
-	for _, s := range slice {
-		if s == val {
-			return true
-		}
-	}
-	return false
-}
