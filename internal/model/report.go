@@ -6,6 +6,8 @@ import "time"
 type Report struct {
 	Package           string               `json:"package"`
 	Version           string               `json:"version"`
+	Description       string               `json:"description,omitempty"`
+	RepositoryURL     string               `json:"repository_url,omitempty"`
 	Timestamp         time.Time            `json:"timestamp"`
 	Scores            Scores               `json:"scores"`
 	Findings          []Finding            `json:"findings"`

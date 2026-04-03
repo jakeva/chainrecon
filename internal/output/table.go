@@ -59,12 +59,25 @@ func (t *TableFormatter) Format(report *model.Report) (string, error) {
 	return b.String(), nil
 }
 
-// renderHeader produces the package name, version, and weekly download lines.
+// renderHeader produces the package info lines above the signal table.
 func (t *TableFormatter) renderHeader(report *model.Report) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Package:"), report.Package)
+	if report.Description != "" {
+		fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Description:"), report.Description)
+	}
 	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Version:"), report.Version)
 	fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Weekly Downloads:"), format.Commas(report.WeeklyDownloads))
+	if len(report.Maintainers) > 0 {
+		names := make([]string, len(report.Maintainers))
+		for i, m := range report.Maintainers {
+			names[i] = m.Name
+		}
+		fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Maintainers:"), strings.Join(names, ", "))
+	}
+	if report.RepositoryURL != "" {
+		fmt.Fprintf(&b, " %s %s\n", t.bold.Render("Repository:"), report.RepositoryURL)
+	}
 	return b.String()
 }
 
