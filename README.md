@@ -10,22 +10,15 @@
 
 chainrecon profiles npm packages from the attacker's perspective, surfacing the signals that make a package an attractive target for compromise before an attack happens.
 
-## Install
-
-```bash
-brew install chainrecon/tap/chainrecon
-```
-
 ## Quick start
 
-```bash
-chainrecon scan axios
 ```
+$ brew install chainrecon/tap/chainrecon
+$ chainrecon scan axios
 
-```
  Package: axios
  Version: 1.14.0
- Weekly Downloads: 101,121,575
+ Weekly Downloads: 99,988,070
 
  ┌─────────────────────────┬───────────┬─────────────────────────────────────────────┐
  │ Signal                  │ Score     │ Detail                                      │
@@ -42,10 +35,15 @@ chainrecon scan axios
  └─────────────────────────┴───────────┴─────────────────────────────────────────────┘
 
  Key Findings:
-  [CRITICAL] Single maintainer with full publish access
-  [CRITICAL] Maintainer email changed between versions
   [HIGH] Provenance is intermittent across versions
+  [MEDIUM] Mixed publishing methods detected
+  [CRITICAL] Single maintainer with full publish access
   [HIGH] All maintainers using personal email addresses
+  [MEDIUM] Unscoped package with limited maintainer access
+  [CRITICAL] Extremely high blast radius
+  [CRITICAL] Maintainer email changed between versions
+  [HIGH] Unknown publisher on recent version
+  [LOW] Multiple different publishers across recent versions
   [MEDIUM] OpenSSF Scorecard: 5.5/10
   [HIGH] Scorecard Token-Permissions: 0/10
   [HIGH] Scorecard Pinned-Dependencies: 1/10
