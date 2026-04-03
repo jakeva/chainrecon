@@ -39,6 +39,15 @@ chainrecon scan axios --timeout 5m
 # Bypass the local response cache
 chainrecon scan axios --no-cache
 
+# Provide a GitHub token for higher API rate limits
+chainrecon scan axios --github-token ghp_xxx
+# Or set via environment variable
+export GITHUB_TOKEN=ghp_xxx
+
+# Skip Scorecard or GitHub lookups
+chainrecon scan axios --no-scorecard
+chainrecon scan axios --no-github
+
 # Show version info
 chainrecon version
 ```
@@ -57,10 +66,11 @@ Example output:
  │ Publishing Hygiene      │ 5.0/10    │ Mixed publishing methods detected           │
  │ Maintainer Risk         │ 9.0/10    │ Single maintainer with full publish access  │
  │ Identity Stability      │ 8.0/10    │ Maintainer email changed between versions   │
+ │ Scorecard (imported)    │ 4.5/10    │ OpenSSF Scorecard: 5.5/10                   │
  │ Blast Radius            │ 10.0/10   │ Extremely high blast radius                 │
  ├─────────────────────────┼───────────┼─────────────────────────────────────────────┤
- │ Attack Surface          │ 7.4/10    │                                             │
- │ Target Score            │ 74.0      │ CRITICAL                                    │
+ │ Attack Surface          │ 6.9/10    │                                             │
+ │ Target Score            │ 69.0      │ HIGH                                        │
  └─────────────────────────┴───────────┴─────────────────────────────────────────────┘
 
  Key Findings:
@@ -68,11 +78,14 @@ Example output:
   [CRITICAL] Maintainer email changed between versions
   [HIGH] Provenance is intermittent across versions
   [HIGH] All maintainers using personal email addresses
+  [MEDIUM] OpenSSF Scorecard: 5.5/10
+  [HIGH] Scorecard Token-Permissions: 0/10
+  [HIGH] Scorecard Pinned-Dependencies: 1/10
 ```
 
 ## Signals
 
-chainrecon evaluates five signal categories in Phase 1, with OpenSSF Scorecard integration and GitHub tag correlation coming in Phase 2.
+chainrecon evaluates six signal categories, combining npm registry analysis with imported data from OpenSSF Scorecard and GitHub.
 
 | Signal | What it measures |
 |---|---|
@@ -81,6 +94,9 @@ chainrecon evaluates five signal categories in Phase 1, with OpenSSF Scorecard i
 | **Maintainer Concentration** | How many npm accounts can publish, whether a single account controls all releases, and whether maintainers use personal or organizational email. |
 | **Blast Radius** | Weekly downloads, dependent count, and ecosystem category (security tooling gets a 2x multiplier because compromising a scanner is strategically devastating). |
 | **Identity Stability** | Maintainer email changes between versions, new publishers appearing on established packages, and anomalies in release cadence. |
+| **OpenSSF Scorecard** | Imported from scorecard.dev and inverted so higher means more vulnerable, matching chainrecon's convention. Surfaces individual check failures for Dangerous Workflow, Token Permissions, Pinned Dependencies, Branch Protection, and Signed Releases. Weighted at 15% of the composite score. |
+
+chainrecon also performs **tag correlation** between npm versions and GitHub releases/tags. Versions published without a corresponding GitHub tag are flagged as findings, since this is the exact pattern seen in the Axios compromise where malicious versions had no GitHub release.
 
 ## Scoring
 
@@ -90,7 +106,7 @@ chainrecon computes a target score that represents how attractive a package is f
 target_score = attack_surface_score × blast_radius_score
 ```
 
-Each signal produces a 0.0 to 10.0 score. The attack surface score is a weighted average of the five signals. The target score ranges from 0.0 to 100.0.
+Each signal produces a 0.0 to 10.0 score. The attack surface score is a weighted average of the signals. When Scorecard data is available, it receives 15% weight and the other four signals share the remaining 85%. When Scorecard is unavailable, the original four signal weights are used. The target score ranges from 0.0 to 100.0.
 
 | Rating | Score | Meaning |
 |---|---|---|
@@ -105,7 +121,7 @@ The score does not indicate that a package is compromised. It indicates how attr
 
 **Trivy (March 2026):** TeamPCP exploited a `pull_request_target` workflow to steal a PAT, force pushed malicious commits across 76 version tags, and deployed the CanisterWorm worm to 47+ packages. chainrecon would have flagged the single maintainer concentration and the provenance gaps that preceded the attack.
 
-**Axios (March 2026):** A North Korea nexus actor hijacked the lead maintainer's npm account, changed the account email, and published malicious versions without provenance. The legitimate versions had OIDC provenance and SLSA attestations. The malicious ones had none. chainrecon's provenance state machine would have detected the DROPPED state immediately, and the identity analyzer would have flagged the email change.
+**Axios (March 2026):** A North Korea nexus actor hijacked the lead maintainer's npm account, changed the account email, and published malicious versions without provenance. The legitimate versions had OIDC provenance and SLSA attestations. The malicious ones had none. chainrecon's provenance state machine would have detected the DROPPED state immediately, the identity analyzer would have flagged the email change, and tag correlation would have flagged the missing GitHub releases.
 
 ## Comparison with existing tools
 
@@ -116,15 +132,21 @@ The score does not indicate that a package is compromised. It indicates how attr
 | **Blast Radius Weighting** | Core signal | Not weighted | Not a factor | Not a factor |
 | **Maintainer Risk Analysis** | Bus factor, concentration | Contributor count only | Limited | No |
 | **Publishing Hygiene** | Token type, publish method | Partial (branch protection) | No | No |
+| **Scorecard Integration** | Imported as weighted signal | N/A | No | No |
+| **Tag Correlation** | npm to GitHub release/tag matching | No | No | No |
 | **Focus** | "Which package would I target?" | "Is this project well maintained?" | "Is this install safe?" | "Does this have known CVEs?" |
 
-chainrecon is complementary to Scorecard, not competitive. Phase 2 will import Scorecard data as one input signal (weighted at 15% of the composite score). The novel 85% comes from npm specific signals that Scorecard cannot access because it evaluates repositories, not registry packages.
+chainrecon imports Scorecard data as one input signal (weighted at 15% of the composite score). The novel 85% comes from npm specific signals that Scorecard cannot access because it evaluates repositories, not registry packages.
 
 ## Roadmap
 
-**Phase 2:** OpenSSF Scorecard data integration. GitHub release tag to npm version correlation (detecting versions published without a corresponding GitHub release, which is exactly what happened with Axios). Watch mode for continuous monitoring.
+**Phase 1 (complete):** Core npm signal analysis with provenance tracking, publishing hygiene, maintainer risk, identity stability, and blast radius scoring.
 
-**Phase 3:** SARIF output for CI/CD integration. Webhook alerts for signal changes. Lockfile scanning for `package-lock.json`, `yarn.lock`, and `pnpm-lock.yaml`.
+**Phase 2 (complete):** OpenSSF Scorecard integration and GitHub tag correlation. Scorecard scores are imported and inverted, with individual check failures surfaced as findings. Tag correlation detects npm versions published without corresponding GitHub releases or tags.
+
+**Phase 3:** Watch mode for continuous monitoring. SARIF output for CI/CD integration. GitHub Actions support for PR dependency scanning and scheduled monitoring.
+
+**Phase 4:** Release time detection. Tarball diffing between versions, lifecycle script injection detection, new dependency injection detection, obfuscation signal analysis, and network call introduction flagging. All deterministic analysis with optional LLM pass.
 
 **Future:** PyPI and crates.io support. Maintainer relationship graph analysis. MCP server for inline supply chain review during development. Public ecosystem dashboard.
 
