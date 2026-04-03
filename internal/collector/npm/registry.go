@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chainrecon/chainrecon/internal/cache"
+	"github.com/chainrecon/chainrecon/internal/collector"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -63,7 +64,7 @@ type registryClient struct {
 // NewRegistryClient creates a new RegistryClient backed by the given cache store.
 func NewRegistryClient(c cache.Store) RegistryClient {
 	return &registryClient{
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: collector.NewHTTPClient(30 * time.Second),
 		cache:      c,
 	}
 }

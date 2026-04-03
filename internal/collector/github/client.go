@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chainrecon/chainrecon/internal/cache"
+	"github.com/chainrecon/chainrecon/internal/collector"
 	"github.com/chainrecon/chainrecon/internal/model"
 )
 
@@ -44,7 +45,7 @@ type client struct {
 // used for authentication (increasing the rate limit from 60 to 5000 req/hr).
 func NewClient(c cache.Store, token string) Client {
 	return &client{
-		httpClient: &http.Client{Timeout: 15 * time.Second},
+		httpClient: collector.NewHTTPClient(15 * time.Second),
 		cache:      c,
 		token:      token,
 	}
