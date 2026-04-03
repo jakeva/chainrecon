@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/chainrecon/chainrecon/internal/cli"
@@ -14,6 +15,7 @@ func main() {
 	root.AddCommand(cli.NewVersionCmd())
 
 	if err := root.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
