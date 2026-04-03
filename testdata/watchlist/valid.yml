@@ -1,0 +1,8 @@
+defaults:
+  threshold: 50.0
+
+packages:
+  - name: express
+  - name: axios
+    threshold: 70.0
+  - name: "@anthropic-ai/sdk"
