@@ -118,12 +118,12 @@ func unifiedDiff(path string, old, new []byte) string {
 	}
 
 	var buf strings.Builder
-	buf.WriteString(fmt.Sprintf("--- a/%s\n+++ b/%s\n", path, path))
+	fmt.Fprintf(&buf, "--- a/%s\n+++ b/%s\n", path, path)
 
 	// Group edits into hunks.
 	hunks := groupHunks(edits, len(oldLines), len(newLines), 3)
 	for _, h := range hunks {
-		buf.WriteString(fmt.Sprintf("@@ -%d,%d +%d,%d @@\n", h.oldStart+1, h.oldCount, h.newStart+1, h.newCount))
+		fmt.Fprintf(&buf, "@@ -%d,%d +%d,%d @@\n", h.oldStart+1, h.oldCount, h.newStart+1, h.newCount)
 		for _, line := range h.lines {
 			buf.WriteString(line)
 			buf.WriteByte('\n')

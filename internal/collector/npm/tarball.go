@@ -21,9 +21,6 @@ const (
 	MaxTarballSize = 50 << 20
 	// MaxFileSize is the maximum size for a single file (5 MB).
 	MaxFileSize = 5 << 20
-
-	tarballCacheBucket = "npm_tarballs"
-	tarballCacheTTL    = 24 * time.Hour
 )
 
 // TarballClient downloads and extracts npm package tarballs.
