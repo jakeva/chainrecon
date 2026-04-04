@@ -187,7 +187,7 @@ func Run(ctx context.Context, packageName, version string, opts Options) (*model
 
 	// Tag correlation analysis.
 	var tagFindings []model.Finding
-	if githubReleases != nil || githubTags != nil {
+	if len(githubReleases) > 0 || len(githubTags) > 0 {
 		merged := mergeReleasesAndTags(githubReleases, githubTags)
 		tagAnalyzer := analyzer.NewTagCorrelationAnalyzer()
 		tagFindings = tagAnalyzer.Analyze(sortedVersions, merged)
@@ -223,7 +223,9 @@ func Run(ctx context.Context, packageName, version string, opts Options) (*model
 	}
 
 	// Aggregate findings.
-	var allFindings []model.Finding
+	totalFindings := len(provenanceFindings) + len(hygieneFindings) + len(maintainerFindings) +
+		len(blastFindings) + len(identityFindings) + len(scorecardFindings) + len(tagFindings)
+	allFindings := make([]model.Finding, 0, totalFindings)
 	allFindings = append(allFindings, provenanceFindings...)
 	allFindings = append(allFindings, hygieneFindings...)
 	allFindings = append(allFindings, maintainerFindings...)

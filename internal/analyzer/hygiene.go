@@ -157,9 +157,10 @@ func buildHygieneFindings(score float64) []model.Finding {
 // isBotPublisher reports whether the given publisher name looks like a CI/CD
 // bot rather than a human maintainer. Common bot indicators include names
 // containing "bot", "ci", "automation", or "github-actions".
+var botIndicators = []string{"bot", "ci", "automation", "github-actions"}
+
 func isBotPublisher(name string) bool {
 	lower := strings.ToLower(name)
-	botIndicators := []string{"bot", "ci", "automation", "github-actions"}
 	for _, indicator := range botIndicators {
 		if strings.Contains(lower, indicator) {
 			return true

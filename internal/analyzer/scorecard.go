@@ -95,7 +95,7 @@ func (s *scorecardAnalyzer) Analyze(result *model.ScorecardResult) (model.Signal
 
 	detail := fmt.Sprintf("Scorecard %.1f/10 (inverted to %.1f)", result.Score, inverted)
 	if len(checkDetails) > 0 {
-		detail += " | " + strings.Join(checkDetails, ", ")
+		detail = fmt.Sprintf("%s | %s", detail, strings.Join(checkDetails, ", "))
 	}
 
 	signalScore := model.SignalScore{

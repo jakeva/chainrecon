@@ -17,8 +17,12 @@ func NewScanCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scan <package[@version]>",
 		Short: "Scan an npm package for supply chain risk signals",
-		Args:  cobra.ExactArgs(1),
-		RunE:  runScan,
+		Example: `  chainrecon scan express
+  chainrecon scan axios@1.7.0
+  chainrecon scan @anthropic-ai/sdk --format json
+  chainrecon scan lodash --threshold 60`,
+		Args: cobra.ExactArgs(1),
+		RunE: runScan,
 	}
 
 	cmd.Flags().Int("depth", 20, "How many versions back to analyze for provenance history")
