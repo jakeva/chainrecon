@@ -155,14 +155,14 @@ func defaultTarballURL(packageName, version string) string {
 func printDiffTable(analysis *pkgdiff.Analysis, pkg, oldVer, newVer string) {
 	added, removed, modified := analysis.Diff.FileCount()
 
-	fmt.Fprintf(os.Stdout, "\n  Package: %s\n", pkg)
-	fmt.Fprintf(os.Stdout, "  Diff:    %s -> %s\n", oldVer, newVer)
-	fmt.Fprintf(os.Stdout, "  Files:   +%d -%d ~%d\n", added, removed, modified)
+	_, _ = fmt.Fprintf(os.Stdout, "\n  Package: %s\n", pkg)
+	_, _ = fmt.Fprintf(os.Stdout, "  Diff:    %s -> %s\n", oldVer, newVer)
+	_, _ = fmt.Fprintf(os.Stdout, "  Files:   +%d -%d ~%d\n", added, removed, modified)
 
 	if len(analysis.Findings) == 0 {
-		fmt.Fprintln(os.Stdout, "\n  No suspicious findings.")
+		_, _ = fmt.Fprintln(os.Stdout, "\n  No suspicious findings.")
 	} else {
-		fmt.Fprintf(os.Stdout, "\n  Code Analysis Findings (%d):\n", len(analysis.Findings))
+		_, _ = fmt.Fprintf(os.Stdout, "\n  Code Analysis Findings (%d):\n", len(analysis.Findings))
 		for _, f := range analysis.Findings {
 			loc := ""
 			if f.File != "" {
@@ -173,10 +173,10 @@ func printDiffTable(analysis *pkgdiff.Analysis, pkg, oldVer, newVer string) {
 					loc += ")"
 				}
 			}
-			fmt.Fprintf(os.Stdout, "    [%-8s] %s%s\n", f.Severity, f.Message, loc)
+			_, _ = fmt.Fprintf(os.Stdout, "    [%-8s] %s%s\n", f.Severity, f.Message, loc)
 		}
 	}
-	fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout)
 }
 
 // noopCache satisfies cache.Store for one-off diff operations where we don't
