@@ -18,20 +18,24 @@ import (
 // NewWatchCmd creates a cobra command that monitors packages for new versions.
 func NewWatchCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "watch",
+		Use:   "watch [packages...]",
 		Short: "Monitor packages for new versions and scan them",
-		Long: `Watch reads a watchlist file and polls npm for new versions of each
-package. When a new version is detected, it runs a full scan. Exits with
-code 1 if any package exceeds its threshold.
+		Long: `Watch polls npm for new versions and runs a full scan when changes are
+detected. Exits with code 1 if any package exceeds its threshold.
+
+Pass package names as arguments for quick use, or use --config to load a
+YAML watchlist with per-package thresholds and defaults.
 
 Use --once for a single pass (CI mode) or omit it for continuous polling.`,
-		Example: `  chainrecon watch --config .chainrecon.yml --once
-  chainrecon watch --state-file state.json --once
-  chainrecon watch --config watchlist.yml`,
+		Example: `  chainrecon watch axios express --once
+  chainrecon watch @anthropic-ai/sdk lodash
+  chainrecon watch --config .chainrecon.yml --once
+  chainrecon watch --config watchlist.yml --state-file state.json`,
 		RunE: runWatch,
 	}
 
-	cmd.Flags().String("config", ".chainrecon.yml", "Path to watchlist YAML file")
+	cmd.Flags().String("config", "", "Path to watchlist YAML file")
+	cmd.Flags().Float64("threshold", 0, "Default threshold for all packages (used with inline args)")
 	cmd.Flags().Bool("once", false, "Run a single pass and exit")
 	cmd.Flags().String("state-file", "", "Path to state file for persistence between runs")
 	cmd.Flags().Int("depth", 20, "How many versions back to analyze")
@@ -43,10 +47,11 @@ Use --once for a single pass (CI mode) or omit it for continuous polling.`,
 	return cmd
 }
 
-func runWatch(cmd *cobra.Command, _ []string) error {
+func runWatch(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	configPath, _ := cmd.Flags().GetString("config")
+	threshold, _ := cmd.Flags().GetFloat64("threshold")
 	once, _ := cmd.Flags().GetBool("once")
 	stateFile, _ := cmd.Flags().GetString("state-file")
 	depth, _ := cmd.Flags().GetInt("depth")
@@ -60,9 +65,19 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 		githubToken = os.Getenv("GITHUB_TOKEN")
 	}
 
-	wl, err := watchlist.Load(configPath)
-	if err != nil {
-		return err
+	var wl *watchlist.Watchlist
+	var err error
+
+	switch {
+	case configPath != "":
+		wl, err = watchlist.Load(configPath)
+		if err != nil {
+			return err
+		}
+	case len(args) > 0:
+		wl = watchlist.FromNames(args, threshold)
+	default:
+		return fmt.Errorf("provide package names as arguments or use --config")
 	}
 
 	// Load persisted state if a state file is configured.
