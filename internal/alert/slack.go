@@ -62,8 +62,8 @@ func (s *Slack) Notify(ctx context.Context, event Event) error {
 	if err != nil {
 		return fmt.Errorf("send slack message: %w", err)
 	}
-	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	defer func() { _ = resp.Body.Close() }()
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("slack returned status %d", resp.StatusCode)
