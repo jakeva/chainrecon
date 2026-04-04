@@ -25,6 +25,9 @@ package. When a new version is detected, it runs a full scan. Exits with
 code 1 if any package exceeds its threshold.
 
 Use --once for a single pass (CI mode) or omit it for continuous polling.`,
+		Example: `  chainrecon watch --config .chainrecon.yml --once
+  chainrecon watch --state-file state.json --once
+  chainrecon watch --config watchlist.yml`,
 		RunE: runWatch,
 	}
 

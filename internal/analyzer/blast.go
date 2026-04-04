@@ -48,6 +48,16 @@ var (
 	logCeiling = math.Log10(float64(downloadsCeiling))
 )
 
+// Keyword lists for ecosystem category classification.
+var (
+	securityKeywords = []string{"eslint", "lint", "security", "scan", "audit", "snyk", "trivy"}
+	cicdKeywords     = []string{
+		"webpack", "babel", "rollup", "vite", "jest", "mocha",
+		"cypress", "playwright", "turbo", "nx", "github-actions", "action",
+	}
+	devKeywords = []string{"cli", "prettier", "format", "typescript", "ts-node"}
+)
+
 // Analyze computes the blast-radius score using a logarithmic scale over
 // weekly downloads, applies an ecosystem category multiplier based on the
 // package name, and adds a bonus for high dependent counts. The final score
@@ -112,34 +122,22 @@ func downloadScore(downloads int) float64 {
 func classifyCategory(packageName string) float64 {
 	lower := strings.ToLower(packageName)
 
-	// Security tooling: scanners, linters, audit tools.
-	securityKeywords := []string{"eslint", "lint", "security", "scan", "audit", "snyk", "trivy"}
 	for _, kw := range securityKeywords {
 		if strings.Contains(lower, kw) {
 			return multiplierSecurityTooling
 		}
-	}
-
-	// CI/CD tooling: build tools, test frameworks.
-	cicdKeywords := []string{
-		"webpack", "babel", "rollup", "vite", "jest", "mocha",
-		"cypress", "playwright", "turbo", "nx", "github-actions", "action",
 	}
 	for _, kw := range cicdKeywords {
 		if strings.Contains(lower, kw) {
 			return multiplierCICDTooling
 		}
 	}
-
-	// Developer tooling: CLIs, formatters, TypeScript utilities.
-	devKeywords := []string{"cli", "prettier", "format", "typescript", "ts-node"}
 	for _, kw := range devKeywords {
 		if strings.Contains(lower, kw) {
 			return multiplierDeveloperTooling
 		}
 	}
 
-	// Default: runtime library.
 	return multiplierRuntimeLibrary
 }
 

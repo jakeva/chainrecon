@@ -72,7 +72,7 @@ func (t *tagCorrelationAnalyzer) Analyze(versions []string, releases []model.Git
 	msg := fmt.Sprintf("%d npm version(s) have no corresponding GitHub release", len(unmatched))
 	detail := "Versions without releases: " + strings.Join(shown, ", ")
 	if len(unmatched) > limit {
-		detail += fmt.Sprintf(" (and %d more)", len(unmatched)-limit)
+		detail = fmt.Sprintf("%s (and %d more)", detail, len(unmatched)-limit)
 	}
 
 	findings = append(findings, model.Finding{
