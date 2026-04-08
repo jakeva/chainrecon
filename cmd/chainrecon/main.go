@@ -12,6 +12,7 @@ func main() {
 	root := cli.NewRootCmd()
 	root.AddCommand(cli.NewScanCmd())
 	root.AddCommand(cli.NewWatchCmd())
+	root.AddCommand(cli.NewUpdateCmd())
 	root.AddCommand(cli.NewVersionCmd())
 
 	if err := root.Execute(); err != nil {
