@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/chainrecon/chainrecon/internal/alert"
 	"github.com/chainrecon/chainrecon/internal/collector/npm"
 	"github.com/chainrecon/chainrecon/internal/scan"
 	"github.com/chainrecon/chainrecon/internal/state"
@@ -43,6 +44,9 @@ Use --once for a single pass (CI mode) or omit it for continuous polling.`,
 	cmd.Flags().String("github-token", "", "GitHub personal access token (or set GITHUB_TOKEN)")
 	cmd.Flags().Bool("no-scorecard", false, "Skip OpenSSF Scorecard lookup")
 	cmd.Flags().Bool("no-github", false, "Skip GitHub tag correlation")
+	cmd.Flags().Bool("diff", false, "Diff new versions against previous and factor into scoring")
+	cmd.Flags().String("webhook-url", "", "Send alerts to this webhook URL (JSON POST)")
+	cmd.Flags().String("slack-webhook", "", "Send alerts to this Slack incoming webhook URL")
 
 	return cmd
 }
@@ -59,6 +63,9 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	githubToken, _ := cmd.Flags().GetString("github-token")
 	noScorecard, _ := cmd.Flags().GetBool("no-scorecard")
 	noGitHub, _ := cmd.Flags().GetBool("no-github")
+	enableDiff, _ := cmd.Flags().GetBool("diff")
+	webhookURL, _ := cmd.Flags().GetString("webhook-url")
+	slackWebhook, _ := cmd.Flags().GetString("slack-webhook")
 	noCache, _ := cmd.Root().PersistentFlags().GetBool("no-cache")
 
 	if githubToken == "" {
@@ -107,7 +114,23 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	}
 	scanFn := watch.DefaultScanFunc(scanOpts)
 
-	runner := watch.NewRunner(wl, poller, scanFn, st, logf)
+	var runnerOpts []watch.Option
+	if enableDiff {
+		runnerOpts = append(runnerOpts, watch.WithDiff(watch.DefaultDiffFunc()))
+	}
+
+	var notifiers []alert.Notifier
+	if webhookURL != "" {
+		notifiers = append(notifiers, alert.NewWebhook(webhookURL))
+	}
+	if slackWebhook != "" {
+		notifiers = append(notifiers, alert.NewSlack(slackWebhook))
+	}
+	if len(notifiers) > 0 {
+		runnerOpts = append(runnerOpts, watch.WithNotifier(alert.NewMulti(notifiers...)))
+	}
+
+	runner := watch.NewRunner(wl, poller, scanFn, st, logf, runnerOpts...)
 
 	// Set up context with signal handling for graceful shutdown.
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)

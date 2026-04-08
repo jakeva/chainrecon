@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chainrecon/chainrecon/internal/alert"
 	"github.com/chainrecon/chainrecon/internal/analyzer"
 	"github.com/chainrecon/chainrecon/internal/collector/npm"
 	"github.com/chainrecon/chainrecon/internal/model"
@@ -18,11 +19,32 @@ import (
 // ScanFunc runs a scan and returns the report.
 type ScanFunc func(ctx context.Context, packageName, version string) (*model.Report, error)
 
+// DiffFunc runs a diff between two versions and returns code findings.
+type DiffFunc func(ctx context.Context, packageName, oldVersion, newVersion string) ([]model.CodeFinding, error)
+
+// Option configures optional Runner behavior.
+type Option func(*Runner)
+
+// WithDiff enables release diffing when a new version is detected. The runner
+// diffs against the previously scanned version and uses contextual scoring
+// to adjust the target score.
+func WithDiff(fn DiffFunc) Option {
+	return func(r *Runner) { r.diffFn = fn }
+}
+
+// WithNotifier configures an alert notifier that fires when packages exceed
+// their threshold.
+func WithNotifier(n alert.Notifier) Option {
+	return func(r *Runner) { r.notifier = n }
+}
+
 // Runner orchestrates the watch loop for a set of packages.
 type Runner struct {
 	watchlist *watchlist.Watchlist
 	poller    npm.Poller
 	scanFn    ScanFunc
+	diffFn    DiffFunc
+	notifier  alert.Notifier
 	state     *state.State
 	logf      func(format string, args ...any)
 	mu        sync.Mutex
@@ -35,20 +57,26 @@ type Alert struct {
 	Version     string
 	TargetScore float64
 	Threshold   float64
+	RiskLevel   string
+	CodeRisk    float64
 }
 
 // NewRunner creates a new watch runner.
-func NewRunner(wl *watchlist.Watchlist, p npm.Poller, scanFn ScanFunc, st *state.State, logf func(string, ...any)) *Runner {
+func NewRunner(wl *watchlist.Watchlist, p npm.Poller, scanFn ScanFunc, st *state.State, logf func(string, ...any), opts ...Option) *Runner {
 	if logf == nil {
 		logf = func(string, ...any) {}
 	}
-	return &Runner{
+	r := &Runner{
 		watchlist: wl,
 		poller:    p,
 		scanFn:    scanFn,
 		state:     st,
 		logf:      logf,
 	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
 }
 
 // RunOnce performs a single pass over all packages: poll for changes, scan new
@@ -151,25 +179,64 @@ func (r *Runner) pollAndScan(ctx context.Context, entry watchlist.Entry) error {
 		return fmt.Errorf("scan: %w", err)
 	}
 
-	risk := analyzer.ClassifyRisk(report.Scores.TargetScore)
-	r.logf("  %s: score=%.1f (%s)\n", entry.Name, report.Scores.TargetScore, risk)
+	targetScore := report.Scores.TargetScore
+	var codeRisk float64
+	var codeFindings []model.CodeFinding
+
+	// Run diff analysis when a diff function is configured and we know the
+	// previous version.
+	if r.diffFn != nil && ps.LastScannedVersion != "" {
+		r.logf("  %s: diffing %s -> %s ...\n", entry.Name, ps.LastScannedVersion, result.LatestVersion)
+		findings, diffErr := r.diffFn(ctx, entry.Name, ps.LastScannedVersion, result.LatestVersion)
+		if diffErr != nil {
+			r.logf("  Warning: diff failed for %s: %v\n", entry.Name, diffErr)
+		} else if len(findings) > 0 {
+			combined := analyzer.CombineScores(report.Scores, findings)
+			targetScore = combined.AdjustedTarget
+			codeRisk = combined.CodeRisk
+			codeFindings = findings
+			r.logf("  %s: %d code finding(s), code_risk=%.1f, adjusted_score=%.1f\n",
+				entry.Name, len(findings), codeRisk, targetScore)
+		}
+	}
+
+	risk := analyzer.ClassifyRisk(targetScore)
+	r.logf("  %s: score=%.1f (%s)\n", entry.Name, targetScore, risk)
 
 	r.mu.Lock()
-	r.state.Update(entry.Name, result.LatestVersion, report.Scores.TargetScore, risk, result.ETag)
+	r.state.Update(entry.Name, result.LatestVersion, targetScore, risk, result.ETag)
 	r.mu.Unlock()
 
 	threshold := r.watchlist.EffectiveThreshold(entry)
-	if threshold > 0 && report.Scores.TargetScore >= threshold {
-		r.mu.Lock()
-		r.alerts = append(r.alerts, Alert{
+	if threshold > 0 && targetScore >= threshold {
+		a := Alert{
 			Package:     entry.Name,
 			Version:     result.LatestVersion,
-			TargetScore: report.Scores.TargetScore,
+			TargetScore: targetScore,
 			Threshold:   threshold,
-		})
+			RiskLevel:   risk,
+			CodeRisk:    codeRisk,
+		}
+		r.mu.Lock()
+		r.alerts = append(r.alerts, a)
 		r.mu.Unlock()
 		r.logf("  ALERT: %s v%s score %.1f exceeds threshold %.1f\n",
-			entry.Name, result.LatestVersion, report.Scores.TargetScore, threshold)
+			entry.Name, result.LatestVersion, targetScore, threshold)
+
+		// Fire alert notification.
+		if r.notifier != nil {
+			event := alert.Event{
+				Package:     a.Package,
+				Version:     a.Version,
+				TargetScore: a.TargetScore,
+				Threshold:   a.Threshold,
+				RiskLevel:   a.RiskLevel,
+				Findings:    model.CodeFindingsToFindings(codeFindings),
+			}
+			if notifyErr := r.notifier.Notify(ctx, event); notifyErr != nil {
+				r.logf("  Warning: alert notification failed: %v\n", notifyErr)
+			}
+		}
 	}
 
 	return nil
