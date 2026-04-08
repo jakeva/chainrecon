@@ -3,6 +3,7 @@ package output
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -83,9 +84,10 @@ func (t *TableFormatter) renderHeader(report *model.Report) string {
 
 // signalRow holds the data for a single signal table row.
 type signalRow struct {
-	signal string
-	score  string
-	detail string
+	signal   string
+	score    string
+	numScore float64
+	detail   string
 }
 
 // renderSignalTable draws the bordered table of signal scores and summary.
@@ -129,13 +131,25 @@ func (t *TableFormatter) buildSignalRows(report *model.Report) []signalRow {
 	}
 
 	rows := []signalRow{
-		{signal: "Provenance", score: fmt.Sprintf("%.1f/10", report.Scores.Provenance), detail: detailBySignal["provenance"]},
-		{signal: "Publishing Hygiene", score: fmt.Sprintf("%.1f/10", report.Scores.PublishingHygiene), detail: detailBySignal["publishing_hygiene"]},
-		{signal: "Maintainer Risk", score: fmt.Sprintf("%.1f/10", report.Scores.MaintainerRisk), detail: detailBySignal["maintainer_risk"]},
-		{signal: "Identity Stability", score: fmt.Sprintf("%.1f/10", report.Scores.IdentityStability), detail: detailBySignal["identity"]},
-		{signal: "Scorecard (imported)", score: fmt.Sprintf("%.1f/10", report.Scores.ScorecardRepo), detail: detailBySignal["scorecard"]},
-		{signal: "Blast Radius", score: fmt.Sprintf("%.1f/10", report.Scores.BlastRadius), detail: detailBySignal["blast_radius"]},
+		{signal: "Provenance", numScore: report.Scores.Provenance, score: fmt.Sprintf("%.1f/10", report.Scores.Provenance), detail: detailBySignal["provenance"]},
+		{signal: "Publishing Hygiene", numScore: report.Scores.PublishingHygiene, score: fmt.Sprintf("%.1f/10", report.Scores.PublishingHygiene), detail: detailBySignal["publishing_hygiene"]},
+		{signal: "Maintainer Risk", numScore: report.Scores.MaintainerRisk, score: fmt.Sprintf("%.1f/10", report.Scores.MaintainerRisk), detail: detailBySignal["maintainer_risk"]},
+		{signal: "Identity Stability", numScore: report.Scores.IdentityStability, score: fmt.Sprintf("%.1f/10", report.Scores.IdentityStability), detail: detailBySignal["identity"]},
+		{signal: "Scorecard (imported)", numScore: report.Scores.ScorecardRepo, score: fmt.Sprintf("%.1f/10", report.Scores.ScorecardRepo), detail: detailBySignal["scorecard"]},
+		{signal: "Blast Radius", numScore: report.Scores.BlastRadius, score: fmt.Sprintf("%.1f/10", report.Scores.BlastRadius), detail: detailBySignal["blast_radius"]},
 	}
+
+	// Sort by score descending so the highest-risk signals appear first.
+	slices.SortStableFunc(rows, func(a, b signalRow) int {
+		if a.numScore > b.numScore {
+			return -1
+		}
+		if a.numScore < b.numScore {
+			return 1
+		}
+		return 0
+	})
+
 	return rows
 }
 

@@ -23,30 +23,30 @@ $ chainrecon scan axios
  ┌─────────────────────────┬───────────┬─────────────────────────────────────────────┐
  │ Signal                  │ Score     │ Detail                                      │
  ├─────────────────────────┼───────────┼─────────────────────────────────────────────┤
- │ Provenance              │ 7.5/10    │ Provenance is intermittent across versions  │
- │ Publishing Hygiene      │ 5.0/10    │ Mixed publishing methods detected           │
+ │ Blast Radius            │ 10.0/10   │ Extremely high blast radius                 │
  │ Maintainer Risk         │ 9.0/10    │ Single maintainer with full publish access  │
  │ Identity Stability      │ 8.0/10    │ Maintainer email changed between versions   │
+ │ Provenance              │ 7.5/10    │ Provenance is intermittent across versions  │
+ │ Publishing Hygiene      │ 5.0/10    │ Mixed publishing methods detected           │
  │ Scorecard (imported)    │ 4.5/10    │ OpenSSF Scorecard: 5.5/10                   │
- │ Blast Radius            │ 10.0/10   │ Extremely high blast radius                 │
  ├─────────────────────────┼───────────┼─────────────────────────────────────────────┤
  │ Attack Surface          │ 6.9/10    │                                             │
  │ Target Score            │ 69.0      │ HIGH                                        │
  └─────────────────────────┴───────────┴─────────────────────────────────────────────┘
 
  Key Findings:
-  [HIGH] Provenance is intermittent across versions
-  [MEDIUM] Mixed publishing methods detected
   [CRITICAL] Single maintainer with full publish access
-  [HIGH] All maintainers using personal email addresses
-  [MEDIUM] Unscoped package with limited maintainer access
   [CRITICAL] Extremely high blast radius
   [CRITICAL] Maintainer email changed between versions
+  [HIGH] Provenance is intermittent across versions
+  [HIGH] All maintainers using personal email addresses
   [HIGH] Unknown publisher on recent version
-  [LOW] Multiple different publishers across recent versions
-  [MEDIUM] OpenSSF Scorecard: 5.5/10
   [HIGH] Scorecard Token-Permissions: 0/10
   [HIGH] Scorecard Pinned-Dependencies: 1/10
+  [MEDIUM] Mixed publishing methods detected
+  [MEDIUM] Unscoped package with limited maintainer access
+  [MEDIUM] OpenSSF Scorecard: 5.5/10
+  [LOW] Multiple different publishers across recent versions
 ```
 
 ## Signals
@@ -83,7 +83,9 @@ The score indicates how attractive a package is as a target, not whether it is c
 | Command | Description |
 |---|---|
 | `chainrecon scan <package>` | Scan an npm package |
-| `chainrecon watch` | Monitor packages for new versions |
+| `chainrecon diff <package>` | Diff two versions for suspicious changes |
+| `chainrecon watch [packages...]` | Monitor packages for new versions |
+| `chainrecon update` | Update chainrecon to the latest release |
 | `chainrecon version` | Print version info |
 
 ### scan flags
