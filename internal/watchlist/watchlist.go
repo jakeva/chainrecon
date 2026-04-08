@@ -26,6 +26,19 @@ type Watchlist struct {
 	Packages []Entry  `yaml:"packages" json:"packages"`
 }
 
+// FromNames builds a Watchlist from a list of package names and an optional
+// default threshold. This is the quick-use path for CLI arguments.
+func FromNames(names []string, threshold float64) *Watchlist {
+	entries := make([]Entry, len(names))
+	for i, name := range names {
+		entries[i] = Entry{Name: name}
+	}
+	return &Watchlist{
+		Defaults: Defaults{Threshold: threshold},
+		Packages: entries,
+	}
+}
+
 // Load reads and parses a watchlist from a YAML file.
 func Load(path string) (*Watchlist, error) {
 	data, err := os.ReadFile(path)
