@@ -11,6 +11,7 @@ import (
 func main() {
 	root := cli.NewRootCmd()
 	root.AddCommand(cli.NewScanCmd())
+	root.AddCommand(cli.NewDiffCmd())
 	root.AddCommand(cli.NewWatchCmd())
 	root.AddCommand(cli.NewUpdateCmd())
 	root.AddCommand(cli.NewVersionCmd())
