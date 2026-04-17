@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func makeContents(name, version string, files map[string]string) *model.PackageContents {

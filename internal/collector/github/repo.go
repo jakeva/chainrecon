@@ -3,7 +3,7 @@ package github
 import (
 	"strings"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // ParseRepoURL extracts the GitHub owner and repo name from npm package

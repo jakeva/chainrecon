@@ -3,7 +3,7 @@ package analyzer
 import (
 	"math"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Weights for attack_surface_score.

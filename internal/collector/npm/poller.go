@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/chainrecon/chainrecon/internal/collector"
+	"github.com/jakeva/chainrecon/internal/collector"
 )
 
 // Poller checks for new versions of npm packages using conditional HTTP requests.

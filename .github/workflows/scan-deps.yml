@@ -35,7 +35,7 @@ jobs:
           go-version: "1.26"
 
       - name: Install chainrecon
-        run: go install github.com/chainrecon/chainrecon/cmd/chainrecon@${{ inputs.chainrecon-version }}
+        run: go install github.com/jakeva/chainrecon/cmd/chainrecon@${{ inputs.chainrecon-version }}
 
       - name: Detect changed packages
         id: detect

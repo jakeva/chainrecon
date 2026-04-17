@@ -9,12 +9,12 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/chainrecon/chainrecon/internal/analyzer"
-	"github.com/chainrecon/chainrecon/internal/cache"
-	gh "github.com/chainrecon/chainrecon/internal/collector/github"
-	"github.com/chainrecon/chainrecon/internal/collector/npm"
-	"github.com/chainrecon/chainrecon/internal/collector/scorecard"
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/analyzer"
+	"github.com/jakeva/chainrecon/internal/cache"
+	gh "github.com/jakeva/chainrecon/internal/collector/github"
+	"github.com/jakeva/chainrecon/internal/collector/npm"
+	"github.com/jakeva/chainrecon/internal/collector/scorecard"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Options configures a scan pipeline run.

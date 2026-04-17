@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestScorecardAnalyzer_NilResult(t *testing.T) {

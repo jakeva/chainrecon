@@ -3,7 +3,7 @@ package github
 import (
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestParseRepoURL(t *testing.T) {

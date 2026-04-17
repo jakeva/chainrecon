@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chainrecon/chainrecon/internal/cli"
+	"github.com/jakeva/chainrecon/internal/cli"
 )
 
 func main() {

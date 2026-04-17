@@ -7,9 +7,9 @@ builds:
       - CGO_ENABLED=0
     ldflags:
       - -s -w
-      - -X github.com/chainrecon/chainrecon/internal/cli.Version={{.Version}}
-      - -X github.com/chainrecon/chainrecon/internal/cli.Commit={{.Commit}}
-      - -X github.com/chainrecon/chainrecon/internal/cli.Date={{.Date}}
+      - -X github.com/jakeva/chainrecon/internal/cli.Version={{.Version}}
+      - -X github.com/jakeva/chainrecon/internal/cli.Commit={{.Commit}}
+      - -X github.com/jakeva/chainrecon/internal/cli.Date={{.Date}}
     goos:
       - linux
       - darwin
@@ -46,7 +46,7 @@ brews:
       owner: chainrecon
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    homepage: https://github.com/chainrecon/chainrecon
+    homepage: https://github.com/jakeva/chainrecon
     description: Find the next supply chain attack before the attacker does.
     license: Apache-2.0
     install: |

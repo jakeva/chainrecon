@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/chainrecon/chainrecon/internal/alert"
-	"github.com/chainrecon/chainrecon/internal/collector/npm"
-	"github.com/chainrecon/chainrecon/internal/scan"
-	"github.com/chainrecon/chainrecon/internal/state"
-	"github.com/chainrecon/chainrecon/internal/watch"
-	"github.com/chainrecon/chainrecon/internal/watchlist"
+	"github.com/jakeva/chainrecon/internal/alert"
+	"github.com/jakeva/chainrecon/internal/collector/npm"
+	"github.com/jakeva/chainrecon/internal/scan"
+	"github.com/jakeva/chainrecon/internal/state"
+	"github.com/jakeva/chainrecon/internal/watch"
+	"github.com/jakeva/chainrecon/internal/watchlist"
 	"github.com/spf13/cobra"
 )
 

@@ -3,7 +3,7 @@ package analyzer
 import (
 	"fmt"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // LifecycleAnalyzer detects newly added or modified lifecycle scripts in

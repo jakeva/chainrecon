@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestMaintainerAnalyzer_SingleMaintainerPersonalEmail_Unscoped(t *testing.T) {

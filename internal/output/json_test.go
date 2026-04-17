@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // sampleJSONReport builds a fully-populated report for JSON formatting tests.

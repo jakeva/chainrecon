@@ -3,7 +3,7 @@ package analyzer
 import (
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestNativeAddonAnalyzer(t *testing.T) {

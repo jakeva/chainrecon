@@ -9,7 +9,7 @@ on:
 
 jobs:
   watch:
-    uses: chainrecon/chainrecon/.github/workflows/watch-schedule.yml@main
+    uses: jakeva/chainrecon/.github/workflows/watch-schedule.yml@main
     with:
       config-path: .chainrecon.yml
     secrets:

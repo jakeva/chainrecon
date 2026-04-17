@@ -1,4 +1,4 @@
-module github.com/chainrecon/chainrecon
+module github.com/jakeva/chainrecon
 
 go 1.26.1
 

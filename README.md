@@ -4,8 +4,8 @@
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go)](https://go.dev)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/chainrecon/chainrecon/actions/workflows/ci.yml/badge.svg)](https://github.com/chainrecon/chainrecon/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/chainrecon/chainrecon)](https://github.com/chainrecon/chainrecon/releases/latest)
+[![CI](https://github.com/jakeva/chainrecon/actions/workflows/ci.yml/badge.svg)](https://github.com/jakeva/chainrecon/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/jakeva/chainrecon)](https://github.com/jakeva/chainrecon/releases/latest)
 [![Homebrew](https://img.shields.io/badge/Homebrew-chainrecon%2Ftap-FBB040?logo=homebrew)](https://github.com/chainrecon/homebrew-tap)
 
 chainrecon profiles npm packages from the attacker's perspective, surfacing the signals that make a package an attractive target for compromise before an attack happens.
@@ -116,7 +116,7 @@ The score indicates how attractive a package is as a target, not whether it is c
 ## Build from source
 
 ```bash
-git clone https://github.com/chainrecon/chainrecon.git
+git clone https://github.com/jakeva/chainrecon.git
 cd chainrecon
 make build
 ./bin/chainrecon scan axios

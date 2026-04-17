@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/chainrecon/chainrecon/internal/cache"
-	"github.com/chainrecon/chainrecon/internal/collector/npm"
-	pkgdiff "github.com/chainrecon/chainrecon/internal/diff"
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/cache"
+	"github.com/jakeva/chainrecon/internal/collector/npm"
+	pkgdiff "github.com/jakeva/chainrecon/internal/diff"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // DefaultDiffFunc returns a DiffFunc that downloads tarballs and runs the

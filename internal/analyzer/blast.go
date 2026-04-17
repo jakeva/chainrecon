@@ -5,8 +5,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/chainrecon/chainrecon/internal/format"
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/format"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // BlastRadiusAnalyzer evaluates the ecosystem impact of a compromised package

@@ -7,10 +7,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/collector/npm"
-	"github.com/chainrecon/chainrecon/internal/model"
-	"github.com/chainrecon/chainrecon/internal/state"
-	"github.com/chainrecon/chainrecon/internal/watchlist"
+	"github.com/jakeva/chainrecon/internal/collector/npm"
+	"github.com/jakeva/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/state"
+	"github.com/jakeva/chainrecon/internal/watchlist"
 )
 
 // TestRunOnce_StatePersistsAcrossRuns verifies that when we save state after
