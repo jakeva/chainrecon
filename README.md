@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/jakeva/chainrecon/actions/workflows/ci.yml/badge.svg)](https://github.com/jakeva/chainrecon/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/jakeva/chainrecon)](https://github.com/jakeva/chainrecon/releases/latest)
-[![Homebrew](https://img.shields.io/badge/Homebrew-chainrecon%2Ftap-FBB040?logo=homebrew)](https://github.com/chainrecon/homebrew-tap)
+[![Homebrew](https://img.shields.io/badge/Homebrew-jakeva%2Ftap-FBB040?logo=homebrew)](https://github.com/jakeva/homebrew-tap)
 
 chainrecon profiles npm packages from the attacker's perspective, surfacing the signals that make a package an attractive target for compromise before an attack happens.
 
