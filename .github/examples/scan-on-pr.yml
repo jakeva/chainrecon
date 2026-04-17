@@ -12,7 +12,7 @@ on:
 
 jobs:
   scan:
-    uses: chainrecon/chainrecon/.github/workflows/scan-deps.yml@main
+    uses: jakeva/chainrecon/.github/workflows/scan-deps.yml@main
     with:
       threshold: 50
     secrets:
