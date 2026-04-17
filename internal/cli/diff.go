@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/chainrecon/chainrecon/internal/collector/npm"
-	pkgdiff "github.com/chainrecon/chainrecon/internal/diff"
+	"github.com/jakeva/chainrecon/internal/collector/npm"
+	pkgdiff "github.com/jakeva/chainrecon/internal/diff"
 	"github.com/spf13/cobra"
 )
 

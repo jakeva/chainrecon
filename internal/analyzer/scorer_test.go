@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestScorer_ComputeScores(t *testing.T) {

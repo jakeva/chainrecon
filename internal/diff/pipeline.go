@@ -1,8 +1,8 @@
 package diff
 
 import (
-	"github.com/chainrecon/chainrecon/internal/analyzer"
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/analyzer"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Analysis holds the results of running all code analyzers on a release diff.

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainrecon/chainrecon/internal/output"
-	"github.com/chainrecon/chainrecon/internal/scan"
+	"github.com/jakeva/chainrecon/internal/output"
+	"github.com/jakeva/chainrecon/internal/scan"
 	"github.com/spf13/cobra"
 )
 

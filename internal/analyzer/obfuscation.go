@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // ObfuscationAnalyzer scans added or modified JS/TS files for patterns that

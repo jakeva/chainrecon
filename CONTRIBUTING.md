@@ -3,7 +3,7 @@
 ## Getting started
 
 ```bash
-git clone https://github.com/chainrecon/chainrecon.git
+git clone https://github.com/jakeva/chainrecon.git
 cd chainrecon
 make build
 make test

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Formatter defines the interface for rendering a Report to a string.

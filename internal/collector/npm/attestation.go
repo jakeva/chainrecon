@@ -13,9 +13,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/chainrecon/chainrecon/internal/cache"
-	"github.com/chainrecon/chainrecon/internal/collector"
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/cache"
+	"github.com/jakeva/chainrecon/internal/collector"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 var attestationBaseURL = "https://registry.npmjs.org/-/npm/v1/attestations"

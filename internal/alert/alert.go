@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Event holds the details of an alert that should be sent to notification backends.

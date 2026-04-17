@@ -3,7 +3,7 @@ package analyzer
 import (
 	"math"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Severity weights for code findings when computing a composite code risk score.

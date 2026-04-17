@@ -3,7 +3,7 @@ package npm
 import (
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestMaintainerClient_ExtractMaintainers(t *testing.T) {

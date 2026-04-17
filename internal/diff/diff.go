@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Compare produces a ReleaseDiff from two PackageContents.

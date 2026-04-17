@@ -108,7 +108,7 @@ func isHomebrewPath(path string) bool {
 
 func fetchLatestRelease(ctx context.Context) (*ghRelease, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.github.com/repos/chainrecon/chainrecon/releases/latest", nil)
+		"https://api.github.com/repos/jakeva/chainrecon/releases/latest", nil)
 	if err != nil {
 		return nil, err
 	}

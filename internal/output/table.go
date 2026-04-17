@@ -8,9 +8,9 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/chainrecon/chainrecon/internal/analyzer"
-	"github.com/chainrecon/chainrecon/internal/format"
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/analyzer"
+	"github.com/jakeva/chainrecon/internal/format"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // Column widths for the signal table.

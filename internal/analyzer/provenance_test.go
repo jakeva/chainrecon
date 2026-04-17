@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // almostEqual reports whether two float64 values are within the given tolerance.

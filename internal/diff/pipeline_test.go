@@ -3,7 +3,7 @@ package diff
 import (
 	"testing"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 func TestAnalyze_NoFindings(t *testing.T) {

@@ -3,7 +3,7 @@ package analyzer
 import (
 	"fmt"
 
-	"github.com/chainrecon/chainrecon/internal/model"
+	"github.com/jakeva/chainrecon/internal/model"
 )
 
 // DepInjectionAnalyzer detects new dependencies added between two versions
