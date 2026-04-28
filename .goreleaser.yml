@@ -43,7 +43,7 @@ changelog:
 
 brews:
   - repository:
-      owner: chainrecon
+      owner: jakeva
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/jakeva/chainrecon

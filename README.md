@@ -13,7 +13,7 @@ chainrecon profiles npm packages from the attacker's perspective, surfacing the 
 ## Quick start
 
 ```
-$ brew install chainrecon/tap/chainrecon
+$ brew install jakeva/tap/chainrecon
 $ chainrecon scan axios
 
  Package: axios
